@@ -49,7 +49,8 @@ extra-source-files: CHANGELOG.md
 
 library
     -- Modules exported by the library.
-    exposed-modules:  MyLib
+    exposed-modules:  
+        Config
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -63,6 +64,7 @@ library
         BinaryLiterals
         NoImplicitPrelude
         DeriveGeneric
+        DeriveAnyClass
         ScopedTypeVariables
 
 
