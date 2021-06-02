@@ -87,6 +87,14 @@ library
     -- Base language which the package is written in.
     default-language: Haskell2010
 
+    ghc-options:
+        -Wall
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns 
+        -Wredundant-constraints 
+        -funbox-strict-fields
+        -freverse-errors
+
 executable tutorial-telemetry
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
@@ -117,13 +125,21 @@ executable tutorial-telemetry
         aeson-pretty,
         attoparsec,
         attoparsec-binary,
-        text 
+        text,
+        optparse-generic
 
     -- Directories containing source files.
     hs-source-dirs:   src-exe
 
     -- Base language which the package is written in.
     default-language: Haskell2010
+    ghc-options:
+        -Wall
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns 
+        -Wredundant-constraints 
+        -funbox-strict-fields
+        -freverse-errors
 
 test-suite tutorial-telemetry-test
     -- Base language which the package is written in.
