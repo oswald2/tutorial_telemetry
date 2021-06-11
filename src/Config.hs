@@ -12,14 +12,15 @@ import qualified RIO.ByteString.Lazy           as BL
 import qualified RIO.Text                      as T
 
 data Config = Config
-    { cfgHostname :: !Text
-    , cfgPort     :: !Word16
+    { cfgHostname   :: !Text
+    , cfgPort       :: !Word16
+    , cfgTmFrameLen :: !Word16
     }
     deriving (Show, Generic, ToJSON, FromJSON)
 
 
 defaultConfig :: Config
-defaultConfig = Config { cfgHostname = "localhost", cfgPort = 2502 }
+defaultConfig = Config { cfgHostname = "localhost", cfgPort = 2502, cfgTmFrameLen = 1115 }
 
 
 writeConfig :: Config -> FilePath -> IO ()

@@ -14,26 +14,37 @@ import           Conduit
 import           Config
 import           Data.Conduit.Network
 import qualified Data.Text.IO                  as T
-import           Options.Generic
-
 import           NCTRS
+import           NcduToTMFrame
 
 
-bsLengthC :: (MonadIO m) => ConduitT ByteString Void m ()
-bsLengthC =
-    awaitForever $ \bs -> liftIO $ T.putStrLn (T.pack (show (BS.length bs)))
+import           Options.Generic
+import           Text.Show.Pretty
 
 
-connectClient :: ClientSettings -> IO ()
-connectClient settings = do
+-- bsLengthC :: (MonadIO m) => ConduitT ByteString Void m ()
+-- bsLengthC =
+--     awaitForever $ \bs -> liftIO $ T.putStrLn (T.pack (show (BS.length bs)))
+
+prettyShowC :: (MonadIO m, Show a) => ConduitT a Void m ()
+prettyShowC = awaitForever $ \x -> liftIO $ pPrint x
+
+
+
+connectClient :: Config -> ClientSettings -> IO ()
+connectClient cfg settings = do
     res <- try $ runGeneralTCPClient settings $ \appData -> do
-        runConduitRes $ appSource appData .| ncduTmC .| printC 
+        runConduitRes
+            $  appSource appData
+            .| ncduTmC
+            .| ncduToTMFrameC cfg
+            .| prettyShowC
     case res of
         Left (_ :: SomeException) -> do
             T.putStrLn "Could not connect, reconnecting..."
             threadDelay 2_000_000
-            connectClient settings
-        Right _ -> connectClient settings
+            connectClient cfg settings
+        Right _ -> connectClient cfg settings
 
 
 data Options w = Options
@@ -71,4 +82,4 @@ main = do
     let settings = clientSettings (fromIntegral (cfgPort cfg))
                                   (encodeUtf8 (cfgHostname cfg))
 
-    connectClient settings
+    connectClient cfg settings
