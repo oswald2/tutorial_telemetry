@@ -16,6 +16,8 @@ import           Data.Conduit.Network
 import qualified Data.Text.IO                  as T
 import           Options.Generic
 
+import           NCTRS
+
 
 bsLengthC :: (MonadIO m) => ConduitT ByteString Void m ()
 bsLengthC =
@@ -25,7 +27,7 @@ bsLengthC =
 connectClient :: ClientSettings -> IO ()
 connectClient settings = do
     res <- try $ runGeneralTCPClient settings $ \appData -> do
-        runConduitRes $ appSource appData .| bsLengthC
+        runConduitRes $ appSource appData .| ncduTmC .| printC 
     case res of
         Left (_ :: SomeException) -> do
             T.putStrLn "Could not connect, reconnecting..."
@@ -35,8 +37,8 @@ connectClient settings = do
 
 
 data Options w = Options
-    { version :: w ::: Bool <?> "Display version information"
-    , config  :: w ::: Maybe String <?> "Specify a config file"
+    { version            :: w ::: Bool <?> "Display version information"
+    , config             :: w ::: Maybe String <?> "Specify a config file"
     , writeDefaultConfig :: w ::: Bool <?> "Write default config to a file"
     }
     deriving Generic
@@ -52,18 +54,18 @@ main = do
     when (version opts) $ do
         T.putStrLn "tutorial-telemeter version: 1.0.0"
         exitSuccess
-    when (writeDefaultConfig opts) $ do 
+    when (writeDefaultConfig opts) $ do
         writeConfig defaultConfig "DefaultConfig.json"
         T.putStrLn "Wrote default config into 'DefaultConfig.json'."
         exitSuccess
-    cfg <- case config opts of 
-        Nothing -> pure defaultConfig 
-        Just file -> do 
-            res <- readConfig file 
-            case res of 
-                Left err -> do 
+    cfg <- case config opts of
+        Nothing   -> pure defaultConfig
+        Just file -> do
+            res <- readConfig file
+            case res of
+                Left err -> do
                     T.putStrLn err
-                    exitFailure 
+                    exitFailure
                 Right c -> pure c
 
     let settings = clientSettings (fromIntegral (cfgPort cfg))
