@@ -51,6 +51,8 @@ library
     -- Modules exported by the library.
     exposed-modules:  
         Config
+        NCTRS
+        CDSTime 
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -79,7 +81,8 @@ library
         aeson-pretty,
         attoparsec,
         attoparsec-binary,
-        text 
+        text,
+        time
 
     -- Directories containing source files.
     hs-source-dirs:   src
