@@ -53,6 +53,8 @@ library
         Config
         NCTRS
         CDSTime 
+        TMFrame
+        NcduToTMFrame
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -82,7 +84,8 @@ library
         attoparsec,
         attoparsec-binary,
         text,
-        time
+        time,
+        pretty-show
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -129,7 +132,9 @@ executable tutorial-telemetry
         attoparsec,
         attoparsec-binary,
         text,
-        optparse-generic
+        optparse-generic,
+        pretty-show
+
 
     -- Directories containing source files.
     hs-source-dirs:   src-exe
