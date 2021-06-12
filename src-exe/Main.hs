@@ -37,7 +37,7 @@ connectClient = do
         runConduitRes
             $  appSource appData
             .| ncduTmC
-            .| ncduToTMFrameC cfg
+            .| ncduToTMFrameC
             .| prettyShowC
     case res of
         Left (_ :: SomeException) -> do
