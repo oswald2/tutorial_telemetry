@@ -3,7 +3,6 @@ module NcduToTMFrame
     , ncduToTMFrameC
     ) where
 
-import qualified Data.Text.IO                  as T
 import           RIO
 import qualified RIO.Text                      as T
 
@@ -28,17 +27,14 @@ data TMFrameMeta = TMFrameMeta
     deriving Show
 
 
-ncduToTMFrameC :: (MonadIO m) => Config -> ConduitT NcduTM TMFrameMeta m ()
+ncduToTMFrameC :: (MonadIO m, MonadReader env m, HasLogFunc env) => Config -> ConduitT NcduTM TMFrameMeta m ()
 ncduToTMFrameC cfg = awaitForever $ \ncdu -> do
     let dat = ncduData ncdu
     if checkCRC dat
         then do
             case parseOnly (tmFrameParser cfg) dat of
                 Left err -> do
-                    liftIO
-                        $  T.putStrLn
-                        $  "Error parsing TM Frame: "
-                        <> T.pack err
+                    logError $  "Error parsing TM Frame: " <> display (T.pack err)
                 Right frame -> do
                     let meta = TMFrameMeta { metaERT = toUTCTime (ncduERT ncdu)
                                            , metaQuality = ncduQuality ncdu
@@ -46,4 +42,4 @@ ncduToTMFrameC cfg = awaitForever $ \ncdu -> do
                                            }
                     yield meta
         else do
-            liftIO $ T.putStrLn $ "CRC error on frame: " <> T.pack (show dat)
+            logError $ "CRC error on frame: " <> display (T.pack (show dat))
