@@ -1,4 +1,5 @@
 {
     "cfgPort": 2502,
-    "cfgHostname": "localhost"
+    "cfgHostname": "localhost",
+    "cfgTmFrameLen": 1115
 }
