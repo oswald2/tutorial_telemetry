@@ -7,9 +7,7 @@ module NCTRS
     ) where
 
 
-import qualified Data.Text.IO                  as T
 import           RIO
-import qualified RIO.Text                      as T
 
 import           Data.Attoparsec.Binary
 import           Data.Attoparsec.ByteString    as A
@@ -113,17 +111,14 @@ ncduTmParser = do
 
 
 
-ncduTmC :: (MonadIO m) => ConduitT ByteString NcduTM m ()
+ncduTmC :: (MonadIO m, MonadReader env m, HasLogFunc env) => ConduitT ByteString NcduTM m ()
 ncduTmC = conduitParserEither ncduTmParser .| sink
   where
     sink = do
         x <- await
         case x of
             Just (Left err) -> do
-                liftIO
-                    $  T.putStrLn
-                    $  "Error on parsing NCDU TM: "
-                    <> (T.pack (show err))
+                logError $ "Error on parsing NCDU TM: " <> displayShow err
             Just (Right (_, ncdu)) -> do
                 yield ncdu
                 sink

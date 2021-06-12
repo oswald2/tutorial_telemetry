@@ -7,9 +7,9 @@
 module Main where
 
 import           RIO
-import qualified RIO.ByteString                as BS
 import qualified RIO.Text                      as T
 
+import           AppState
 import           Conduit
 import           Config
 import           Data.Conduit.Network
@@ -17,22 +17,22 @@ import qualified Data.Text.IO                  as T
 import           NCTRS
 import           NcduToTMFrame
 
-
 import           Options.Generic
 import           Text.Show.Pretty
 
 
--- bsLengthC :: (MonadIO m) => ConduitT ByteString Void m ()
--- bsLengthC =
---     awaitForever $ \bs -> liftIO $ T.putStrLn (T.pack (show (BS.length bs)))
-
-prettyShowC :: (MonadIO m, Show a) => ConduitT a Void m ()
-prettyShowC = awaitForever $ \x -> liftIO $ pPrint x
+prettyShowC :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a) => ConduitT a Void m ()
+prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
 
 
 
-connectClient :: Config -> ClientSettings -> IO ()
-connectClient cfg settings = do
+connectClient :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env) => m ()
+connectClient = do
+    cfg <- getConfig <$> ask 
+
+    let settings = clientSettings (fromIntegral (cfgPort cfg))
+                                  (encodeUtf8 (cfgHostname cfg))
+
     res <- try $ runGeneralTCPClient settings $ \appData -> do
         runConduitRes
             $  appSource appData
@@ -41,10 +41,10 @@ connectClient cfg settings = do
             .| prettyShowC
     case res of
         Left (_ :: SomeException) -> do
-            T.putStrLn "Could not connect, reconnecting..."
+            logWarn "Could not connect, reconnecting..."
             threadDelay 2_000_000
-            connectClient cfg settings
-        Right _ -> connectClient cfg settings
+            connectClient
+        Right _ -> connectClient 
 
 
 data Options w = Options
@@ -79,7 +79,14 @@ main = do
                     exitFailure
                 Right c -> pure c
 
-    let settings = clientSettings (fromIntegral (cfgPort cfg))
-                                  (encodeUtf8 (cfgHostname cfg))
+    logOptions <- logOptionsHandle stderr True
 
-    connectClient cfg settings
+    withLogFunc logOptions $ \logF -> do
+        let app = AppState 
+                { appLogFunc = logF
+                , appConfig = cfg
+                }
+                
+        runRIO app $ do
+            logInfo "Starting app"
+            connectClient 
