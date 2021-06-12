@@ -14,6 +14,7 @@ import           Data.Attoparsec.ByteString
 import           Data.Time.Clock
 
 import           CDSTime
+import           CRC
 import           Config
 import           NCTRS
 import           TMFrame
@@ -23,18 +24,26 @@ data TMFrameMeta = TMFrameMeta
     { metaERT     :: UTCTime
     , metaQuality :: QualityFlag
     , metaFrame   :: TMFrame
-    } deriving (Show)
+    }
+    deriving Show
 
 
 ncduToTMFrameC :: (MonadIO m) => Config -> ConduitT NcduTM TMFrameMeta m ()
 ncduToTMFrameC cfg = awaitForever $ \ncdu -> do
-    case parseOnly (tmFrameParser cfg) (ncduData ncdu) of
-        Left err -> do
-            liftIO $ T.putStrLn $ "Error parsing TM Frame: " <> T.pack err
-        Right frame -> do
-            let meta = TMFrameMeta { metaERT     = toUTCTime (ncduERT ncdu)
-                                   , metaQuality = ncduQuality ncdu
-                                   , metaFrame   = frame
-                                   }
-            yield meta
-
+    let dat = ncduData ncdu
+    if checkCRC dat
+        then do
+            case parseOnly (tmFrameParser cfg) dat of
+                Left err -> do
+                    liftIO
+                        $  T.putStrLn
+                        $  "Error parsing TM Frame: "
+                        <> T.pack err
+                Right frame -> do
+                    let meta = TMFrameMeta { metaERT = toUTCTime (ncduERT ncdu)
+                                           , metaQuality = ncduQuality ncdu
+                                           , metaFrame = frame
+                                           }
+                    yield meta
+        else do
+            liftIO $ T.putStrLn $ "CRC error on frame: " <> T.pack (show dat)

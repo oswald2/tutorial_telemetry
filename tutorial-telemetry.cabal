@@ -55,6 +55,7 @@ library
         CDSTime 
         TMFrame
         NcduToTMFrame
+        CRC
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -158,9 +159,26 @@ test-suite tutorial-telemetry-test
 
     -- Directories containing source files.
     hs-source-dirs:   test
-
+    include-dirs:     test/csrc
     -- The entrypoint to the test suite.
-    main-is:          MyLibTest.hs
+    main-is:          CRCTest.hs
+
+    default-extensions:
+        OverloadedStrings
+        BangPatterns
+        NumericUnderscores
+        BinaryLiterals
+        NoImplicitPrelude
+        DeriveGeneric
+        ScopedTypeVariables
 
     -- Test dependencies.
-    build-depends:    base ^>=4.14.1.0
+    build-depends:    
+        base ^>=4.14.1.0,
+        rio,
+        hedgehog,
+        inline-c,
+        inline-c-cpp,
+        tutorial-telemetry
+
+

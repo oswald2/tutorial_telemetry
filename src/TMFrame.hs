@@ -5,17 +5,14 @@ module TMFrame
     ) where
 
 
-import           RIO
-
-
 import           Data.Attoparsec.Binary
 import           Data.Attoparsec.ByteString    as A
-
+import           RIO
 
 import           Data.Bits
 
+import           CRC
 import           Config
-
 
 data TMFrameHeader = TMFrameHeader
     { frHdrVersion :: !Word8
@@ -32,7 +29,6 @@ data TMFrame = TMFrame
     { frameHdr  :: !TMFrameHeader
     , frameData :: !ByteString
     , frameOcf  :: Maybe Word32
-    , frameCRC  :: !Word16
     }
     deriving Show
 
@@ -64,17 +60,13 @@ tmFrameHeaderParser = do
         )
 
 
-hdrLength :: Int 
+hdrLength :: Int
 hdrLength = 6
 
-crcLength :: Int 
-crcLength = 2
-
-calcDataLen :: Config -> Bool -> Int 
-calcDataLen cfg ocfFlag = 
-    fromIntegral (cfgTmFrameLen cfg) - hdrLength - ocfLen - crcLength 
-    where 
-      ocfLen = if ocfFlag then 4 else 0
+calcDataLen :: Config -> Bool -> Int
+calcDataLen cfg ocfFlag =
+    fromIntegral (cfgTmFrameLen cfg) - hdrLength - ocfLen - crcLength
+    where ocfLen = if ocfFlag then 4 else 0
 
 
 tmFrameParser :: Config -> Parser TMFrame
@@ -82,10 +74,5 @@ tmFrameParser cfg = do
     (ocfFlag, hdr) <- tmFrameHeaderParser
     dat            <- A.take (calcDataLen cfg ocfFlag)
     ocf            <- if ocfFlag then Just <$> anyWord32be else pure Nothing
-    crc            <- anyWord16be
 
-    pure TMFrame { frameHdr  = hdr
-                 , frameData = dat
-                 , frameOcf  = ocf
-                 , frameCRC  = crc
-                 }
+    pure TMFrame { frameHdr = hdr, frameData = dat, frameOcf = ocf }
