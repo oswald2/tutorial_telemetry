@@ -1,0 +1,9 @@
+
+* Description
+
+For the diagrams, graphviz needs to be installed.
+The SVG images are created with the standard =dot= program:
+
+#+BEGIN_EXAMPLE
+dot -Tsvg <file>.dot > <file>.SVG
+#+END_EXAMPLE

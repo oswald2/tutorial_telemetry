@@ -1,0 +1,65 @@
+digraph DataPipeline {
+  rankdir="LR";
+  label = "Haskell by Example Tutorial: Data Pipeline Video 9"
+
+  subgraph cluster_interface {
+      rank = same;
+      style = filled;
+      color = yellow3;
+      node [shape=box,style=filled,color=white];
+
+      nctrs_tc [label="NCTRS TC",shape=box]
+      nctrs_tm [label="NCTRS TM", shape=box]
+      nctrs_admin [label="NCTRS ADMIN", shape=box]
+
+      label = "NCTRS"
+  }
+
+  subgraph cluster_tmChain {
+    style = filled;
+    color = lightgrey;
+    fillcolor="blue:yellow";
+    node [shape=box, style= filled, color=white]
+    label = "Main Thread";
+
+    appSource -> ncduTmC -> ncduToTMFrameC -> vcSwitchC
+  }
+
+  subgraph cluster_vc0 {
+    style = filled;
+    color = lightgrey;
+    fillcolor="blue:yellow";
+    node [shape=box, style= filled, color=white]
+    label = "VC0 Thread";
+
+    sourceTBQueue -> gapCheckC -> prettyShowC
+  }
+
+  subgraph cluster_vc1 {
+    style = filled;
+    color = lightgrey;
+    fillcolor="blue:yellow";
+    node [shape=box, style= filled, color=white]
+    label = "VC1 Thread";
+
+    sourceTBQueue1 -> gapCheckC1 -> prettyShowC1
+  }
+
+  subgraph cluster_vc7 {
+    style = filled;
+    color = lightgrey;
+    fillcolor="blue:yellow";
+    node [shape=box, style= filled, color=white]
+    label = "VC7 Thread";
+
+    sourceTBQueue2 -> gapCheckC2 -> prettyShowC2
+  }
+
+
+  nctrs_tm -> appSource
+
+  vcSwitchC -> sourceTBQueue 
+  vcSwitchC -> sourceTBQueue1
+  vcSwitchC -> sourceTBQueue2 
+
+}
