@@ -6,8 +6,8 @@
 #-}
 module Main where
 
-import           RIO
 -- import qualified RIO.Text                      as T
+import           RIO
 
 import           AppState
 import           Config
@@ -16,6 +16,7 @@ import qualified Data.Text.IO                  as T
 import           Options.Generic
 
 import           Chains
+import           GHC.Conc
 
 
 data Options w = Options
@@ -32,6 +33,9 @@ deriving instance Show (Options Wrapped)
 
 main :: IO ()
 main = do
+    np <- getNumProcessors
+    setNumCapabilities np
+
     opts <- unwrapRecord "tutorial-telemetry"
     when (version opts) $ do
         T.putStrLn "tutorial-telemeter version: 1.0.0"
