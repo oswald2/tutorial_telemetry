@@ -1,0 +1,29 @@
+digraph DataPipeline {
+  rankdir="LR";
+  label = "Haskell by Example Tutorial: Data Pipeline Video 8"
+
+  subgraph cluster_interface {
+      rank = same;
+      style = filled;
+      color = yellow3;
+      node [shape=box,style=filled,color=white];
+
+      nctrs_tc [label="NCTRS TC",shape=box]
+      nctrs_tm [label="NCTRS TM", shape=box]
+      nctrs_admin [label="NCTRS ADMIN", shape=box]
+
+      label = "NCTRS"
+  }
+
+  subgraph cluster_tmChain {
+    style = filled;
+    color = lightgrey;
+    fillcolor="blue:yellow";
+    node [shape=box, style= filled, color=white]
+    label = "Main Thread";
+
+    appSource -> ncduTmC -> ncduToTMFrameC -> prettyShowC
+  }
+
+  nctrs_tm -> appSource
+}
