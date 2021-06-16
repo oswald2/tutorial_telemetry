@@ -2,6 +2,7 @@ module TMFrame
     ( TMFrame(..)
     , TMFrameHeader(..)
     , tmFrameParser
+    , idleFrameFHP
     ) where
 
 
@@ -23,6 +24,10 @@ data TMFrameHeader = TMFrameHeader
     , frHdrFHP     :: !Word16
     }
     deriving Show
+
+
+idleFrameFHP :: Word16 
+idleFrameFHP = 0b11111111110
 
 
 data TMFrame = TMFrame

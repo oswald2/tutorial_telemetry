@@ -57,6 +57,8 @@ library
         NcduToTMFrame
         CRC
         AppState
+        Chains
+        Classes
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -87,7 +89,9 @@ library
         attoparsec-binary,
         text,
         time,
-        pretty-show
+        pretty-show,
+        stm-conduit,
+        containers
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -150,6 +154,7 @@ executable tutorial-telemetry
         -Wredundant-constraints 
         -funbox-strict-fields
         -freverse-errors
+        -threaded
 
 test-suite tutorial-telemetry-test
     -- Base language which the package is written in.
