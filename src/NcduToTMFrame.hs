@@ -46,6 +46,6 @@ ncduToTMFrameC = do
                                 , metaQuality = ncduQuality ncdu
                                 , metaFrame   = frame
                                 }
-                        yield meta
+                        unless (frHdrFHP (frameHdr frame) == idleFrameFHP) $ yield meta
             else do
                 logError $ "CRC error on frame: " <> display (T.pack (show dat))

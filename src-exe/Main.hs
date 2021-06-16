@@ -7,44 +7,15 @@
 module Main where
 
 import           RIO
-import qualified RIO.Text                      as T
+-- import qualified RIO.Text                      as T
 
 import           AppState
-import           Conduit
 import           Config
-import           Data.Conduit.Network
 import qualified Data.Text.IO                  as T
-import           NCTRS
-import           NcduToTMFrame
 
 import           Options.Generic
-import           Text.Show.Pretty
 
-
-prettyShowC :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a) => ConduitT a Void m ()
-prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
-
-
-
-connectClient :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env) => m ()
-connectClient = do
-    cfg <- getConfig <$> ask 
-
-    let settings = clientSettings (fromIntegral (cfgPort cfg))
-                                  (encodeUtf8 (cfgHostname cfg))
-
-    res <- try $ runGeneralTCPClient settings $ \appData -> do
-        runConduitRes
-            $  appSource appData
-            .| ncduTmC
-            .| ncduToTMFrameC
-            .| prettyShowC
-    case res of
-        Left (_ :: SomeException) -> do
-            logWarn "Could not connect, reconnecting..."
-            threadDelay 2_000_000
-            connectClient
-        Right _ -> connectClient 
+import           Chains
 
 
 data Options w = Options
@@ -82,11 +53,8 @@ main = do
     logOptions <- logOptionsHandle stderr True
 
     withLogFunc logOptions $ \logF -> do
-        let app = AppState 
-                { appLogFunc = logF
-                , appConfig = cfg
-                }
-                
+        let app = AppState { appLogFunc = logF, appConfig = cfg }
+
         runRIO app $ do
             logInfo "Starting app"
-            connectClient 
+            runChains
