@@ -23,6 +23,10 @@ prettyShowC
     => ConduitT a Void m ()
 prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
 
+prettyShowVcC
+    :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
+    => Int -> ConduitT a Void m ()
+prettyShowVcC vcid = awaitForever $ \x -> logDebug $ "VC " <> display vcid <> display '\n' <> display (T.pack (ppShow x))
 
 
 runNctrsChain
@@ -41,7 +45,7 @@ runNctrsChain switcherMap = do
             .| ncduToTMFrameC
             .| vcSwitcherC switcherMap
     case res of
-        Left (_ :: SomeException) -> do
+        Left (_ :: IOException) -> do
             logWarn "Could not connect, reconnecting..."
             threadDelay 2_000_000
             runNctrsChain switcherMap
@@ -75,7 +79,7 @@ vcChain
     :: (MonadIO m, MonadReader env m, HasLogFunc env)
     => (Int, TBQueue TMFrameMeta)
     -> ConduitT a Void m ()
-vcChain (_, queue) = sourceTBQueue queue .| prettyShowC
+vcChain (vcid, queue) = sourceTBQueue queue .| prettyShowVcC vcid
 
 
 queueSize :: Natural
@@ -97,9 +101,8 @@ runChains = do
     lst <- mapM createQueue $ cfgVCIDs cfg
     let switcherMap = M.fromList lst
 
-    _ <- async $ forConcurrently_ lst (runVcChain . vcChain)
-
-    runNctrsChain switcherMap
+    race_ (forConcurrently_ lst (runVcChain . vcChain))
+          (runNctrsChain switcherMap)
   where
     createQueue vcid = do
         queue <- newTBQueueIO queueSize
