@@ -7,6 +7,7 @@ module PUSPacket
     , PUSType(..)
     , PUSSubType(..)
     , pusPktParser
+    , idleApid
     ) where
 
 import           RIO
@@ -43,8 +44,11 @@ getSeqFlags val = case val .&. 0b1100_0000_0000_0000 of
     0b0000_0000_0000_0000 -> SegCont
     0b1000_0000_0000_0000 -> SegLast
     0b1100_0000_0000_0000 -> SegStandalone
-    _                     -> undefined
+    _                     -> absurd undefined 
 
+
+idleApid :: Word16 
+idleApid = 0b11111111111
 
 
 data PUSPacketHdr = PUSPacketHdr
@@ -75,10 +79,10 @@ pusPktHdrParser = do
 
 data PUSSecStdHdr = PUSSecStdHdr
     { pDfhVersion   :: !Word8
-    , _pDfhType     :: PUSType
-    , _pDfhSubType  :: PUSSubType
-    , _pDfhSourceID :: !Word8
-    , _pDfhTime     :: !CUCTime
+    , pDfhType     :: PUSType
+    , pDfhSubType  :: PUSSubType
+    , pDfhSourceID :: !Word8
+    , pDfhTime     :: !CUCTime
     }
     deriving Show
 
