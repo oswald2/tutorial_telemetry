@@ -55,6 +55,7 @@ main = do
                 Right c -> pure c
 
     logOptions <- logOptionsHandle stderr True
+    --let logOptions = setLogMinLevel LevelWarn logOptions'
 
     withLogFunc logOptions $ \logF -> do
         let app = AppState { appLogFunc = logF, appConfig = cfg }
