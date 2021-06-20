@@ -14,6 +14,8 @@ import           Data.Attoparsec.ByteString
 import           Data.Time.Calendar
 import           Data.Time.Clock
 
+import           Time
+
 
 
 data CDSTime = CDSTime
@@ -31,10 +33,11 @@ cdsTimeParser = CDSTime <$> anyWord16be <*> anyWord32be <*> anyWord16be
 
 
 
-toUTCTime :: CDSTime -> UTCTime
-toUTCTime (CDSTime days milli micro) =
-    let epochDay1958 = ModifiedJulianDay 36204
-        day          = addDays (fromIntegral days) epochDay1958
-        pico = (fromIntegral milli * 1000 + fromIntegral micro) * 1_000_000
-        dtime        = picosecondsToDiffTime pico
-    in  UTCTime day dtime
+
+instance TimeConversion CDSTime where 
+    toUTCTime (CDSTime days milli micro) =
+        let epochDay1958 = ModifiedJulianDay 36204
+            day          = addDays (fromIntegral days) epochDay1958
+            pico = (fromIntegral milli * 1000 + fromIntegral micro) * 1_000_000
+            dtime        = picosecondsToDiffTime pico
+        in  UTCTime day dtime
