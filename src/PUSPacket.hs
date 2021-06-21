@@ -6,6 +6,7 @@ module PUSPacket
     , PUSSecHdr(..)
     , PUSType(..)
     , PUSSubType(..)
+    , PUSPacket(..)
     , pusPktParser
     , idleApid
     ) where
