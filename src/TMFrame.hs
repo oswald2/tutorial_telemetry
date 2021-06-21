@@ -3,6 +3,7 @@ module TMFrame
     , TMFrameHeader(..)
     , tmFrameParser
     , idleFrameFHP
+    , noFHP
     ) where
 
 
@@ -28,6 +29,9 @@ data TMFrameHeader = TMFrameHeader
 
 idleFrameFHP :: Word16 
 idleFrameFHP = 0b11111111110
+
+noFHP :: Word16
+noFHP = 0b11111111111
 
 
 data TMFrame = TMFrame
