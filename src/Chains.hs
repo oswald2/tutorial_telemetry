@@ -79,7 +79,7 @@ vcChain
     :: (MonadIO m, MonadReader env m, HasLogFunc env)
     => (Int, TBQueue TMFrameMeta)
     -> ConduitT a Void m ()
-vcChain (vcid, queue) = sourceTBQueue queue .| prettyShowVcC vcid
+vcChain (vcid, queue) = sourceTBQueue queue .| gapCheckC .| prettyShowVcC vcid
 
 
 queueSize :: Natural
@@ -107,3 +107,26 @@ runChains = do
     createQueue vcid = do
         queue <- newTBQueueIO queueSize
         pure (fromIntegral vcid, queue)
+
+
+gapCheckC :: (Monad m) => ConduitT TMFrameMeta TMFrameMeta m () 
+gapCheckC = go Nothing 
+    where 
+        go oldVCFC' = do 
+            x <- await 
+            case x of 
+                Nothing -> pure ()
+                Just meta -> do 
+                    let !vcfc = frHdrVCFC . frameHdr . metaFrame $ meta
+                    case oldVCFC' of 
+                        Nothing -> go (Just vcfc)
+                        Just oldVCFC -> do 
+                            if oldVCFC + 1 == vcfc 
+                                then do 
+                                    yield meta 
+                                    go (Just vcfc)
+                                else do 
+                                    let !newMeta = meta { metaGap = Just (oldVCFC, vcfc) }
+                                    yield newMeta 
+                                    go (Just vcfc)
+

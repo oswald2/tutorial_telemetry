@@ -20,9 +20,10 @@ import           TMFrame
 
 
 data TMFrameMeta = TMFrameMeta
-    { metaERT     :: UTCTime
-    , metaQuality :: QualityFlag
-    , metaFrame   :: TMFrame
+    { metaERT     :: !UTCTime
+    , metaQuality :: !QualityFlag
+    , metaGap     :: Maybe (Word8, Word8)
+    , metaFrame   :: !TMFrame
     }
     deriving Show
 
@@ -44,6 +45,7 @@ ncduToTMFrameC = do
                         let meta = TMFrameMeta
                                 { metaERT     = toUTCTime (ncduERT ncdu)
                                 , metaQuality = ncduQuality ncdu
+                                , metaGap     = Nothing 
                                 , metaFrame   = frame
                                 }
                         unless (frHdrFHP (frameHdr frame) == idleFrameFHP) $ yield meta
