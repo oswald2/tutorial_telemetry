@@ -34,7 +34,7 @@ data PUSPktSeqFlags =
   | SegCont
   | SegLast
   | SegStandalone
-  deriving (Show)
+  deriving (Eq, Ord, Enum, Show)
 
 
 
