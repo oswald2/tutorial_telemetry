@@ -16,10 +16,7 @@ import           Conduit
 import           Data.Conduit.Attoparsec
 
 import           CDSTime
-
-
-data QualityFlag = Good | Bad
-  deriving (Show, Generic)
+import           PUSTypes
 
 
 data StreamType = ONLT | ONLC | OFFL
@@ -40,7 +37,7 @@ data NcduTM = NcduTM
     , ncduDataStreamType :: NcduStreamType
     , ncduVCID           :: !Word8
     , ncduRouteID        :: !Word16
-    , ncduERT            :: !CDSTime 
+    , ncduERT            :: !CDSTime
     , ncduSequence       :: !Word8
     , ncduQuality        :: !QualityFlag
     , ncduData           :: !ByteString
@@ -84,7 +81,7 @@ ncduTmParser = do
     streamType <- ncduStreamTypeParser
     vcid       <- anyWord8
     route      <- anyWord16be
-    ert        <- cdsTimeParser 
+    ert        <- cdsTimeParser
     sequ       <- anyWord8
     quality    <- qualityFlagParser
 
@@ -111,7 +108,9 @@ ncduTmParser = do
 
 
 
-ncduTmC :: (MonadIO m, MonadReader env m, HasLogFunc env) => ConduitT ByteString NcduTM m ()
+ncduTmC
+    :: (MonadIO m, MonadReader env m, HasLogFunc env)
+    => ConduitT ByteString NcduTM m ()
 ncduTmC = conduitParserEither ncduTmParser .| sink
   where
     sink = do

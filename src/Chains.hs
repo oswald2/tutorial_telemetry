@@ -18,7 +18,9 @@ import           PUSPacket
 import           RIO
 import qualified RIO.ByteString                as B
 import qualified RIO.Text                      as T
+import           TMDefinitions
 import           TMFrame
+import           TMPacket
 import           Text.Show.Pretty
 
 
@@ -96,8 +98,18 @@ queueSize :: Natural
 queueSize = 500
 
 
-runVcChain :: (MonadIO m) => ConduitT () Void m () -> m ()
-runVcChain chain = runConduit chain
+runVcChain
+    :: (MonadIO m, MonadReader env m, HasLogFunc env)
+    => Int
+    -> ConduitT () Void m ()
+    -> m ()
+runVcChain vcid chain = do
+    runConduit chain
+    logWarn
+        $  "Processing chain for VC"
+        <> display vcid
+        <> " terminated, restarting."
+    runVcChain vcid chain
 
 
 runChains
@@ -109,8 +121,9 @@ runChains = do
     lst <- mapM createQueue $ cfgVCIDs cfg
     let switcherMap = M.fromList lst
 
-    race_ (forConcurrently_ lst (runVcChain . vcChain))
-          (runNctrsChain switcherMap)
+    race_
+        (forConcurrently_ lst (\p@(vcid, _) -> runVcChain vcid (vcChain p)))
+        (runNctrsChain switcherMap)
   where
     createQueue vcid = do
         queue <- newTBQueueIO queueSize
@@ -127,7 +140,9 @@ gapCheckC = go Nothing
             Just meta -> do
                 let !vcfc = frHdrVCFC . frameHdr . metaFrame $ meta
                 case oldVCFC' of
-                    Nothing      -> go (Just vcfc)
+                    Nothing -> do
+                        yield meta
+                        go (Just vcfc)
                     Just oldVCFC -> do
                         if oldVCFC + 1 == vcfc
                             then do
@@ -175,7 +190,11 @@ extractPacketsC = do
             Nothing   -> pure ()
             Just meta -> do
                 case metaGap meta of
-                    Nothing              -> continuation meta
+                    Nothing -> do
+                        let !fhp = frHdrFHP . frameHdr . metaFrame $ meta
+                        if fhp == idleFrameFHP
+                            then getNextFrameC continuation
+                            else continuation meta
                     Just (oldVCFC, vcfc) -> do
                         logWarn
                             $  "GAP in TM Frames detected: old VCFC="
@@ -200,7 +219,8 @@ extractPacketsC = do
                 processPacketC meta rest
 
     processPacketC meta dat
-        | B.null dat = getNextFrameC (\m -> processPacketC meta (frameData (metaFrame m)))
+        | B.null dat = getNextFrameC
+            (\m -> processPacketC meta (frameData (metaFrame m)))
         | otherwise = do
             case A.parse (A.match pusPktParser) dat of
                 A.Fail _ _ err ->
@@ -219,3 +239,5 @@ extractPacketsC = do
 
 
 
+convertToTMPacket :: PktIndex -> PUSPacketMeta -> TMPacket
+convertToTMPacket = undefined
