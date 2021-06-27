@@ -33,6 +33,9 @@ newtype PUSType = PUSType Word8
 pusTypeParser :: A.Parser PUSType
 pusTypeParser = PUSType <$> A.anyWord8
 
+instance Display PUSType where 
+  display (PUSType x) = display x 
+
 
 newtype PUSSubType = PUSSubType Word8
   deriving (Eq, Show, Generic, Hashable, FromJSON, ToJSON)
@@ -41,9 +44,15 @@ pusSubTypeParser :: A.Parser PUSSubType
 pusSubTypeParser = PUSSubType <$> A.anyWord8
 
 
+instance Display PUSSubType where 
+  display (PUSSubType x) = display x 
+
 
 
 newtype HexBytes = HexBytes ByteString
+
+instance Display HexBytes where 
+  textDisplay b = run $ hexBytesBuilder b
 
 
 hexBytesBuilder :: HexBytes -> Builder

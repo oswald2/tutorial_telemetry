@@ -81,6 +81,7 @@ library
         DeriveAnyClass
         ScopedTypeVariables
         MultiWayIf
+        RecordWildCards
 
 
     -- Other library packages from which modules are imported.
@@ -99,7 +100,8 @@ library
         pretty-show,
         stm-conduit,
         containers,
-        text-builder
+        text-builder,
+        reinterpret-cast,
 
     -- Directories containing source files.
     hs-source-dirs:   src

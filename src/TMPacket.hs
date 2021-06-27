@@ -1,6 +1,7 @@
 module TMPacket
     ( TMPacket(..)
     , Parameter(..)
+    , Validity(..)
     ) where
 
 import           Data.Time.Clock

@@ -8,22 +8,25 @@ import           Classes
 import           Conduit
 import           Config
 import qualified Data.Attoparsec.ByteString    as A
+import           Data.Bits
 import           Data.Conduit.Network
 import           Data.Conduit.TQueue
 import qualified Data.IntMap.Strict            as M
+import           Data.ReinterpretCast
 import           Data.Time.Clock
 import           NCTRS
 import           NcduToTMFrame
 import           PUSPacket
+import           PUSTypes
 import           RIO
 import qualified RIO.ByteString                as B
+import qualified RIO.HashMap                   as HM
 import qualified RIO.Text                      as T
+import qualified RIO.Vector                    as V
 import           TMDefinitions
 import           TMFrame
 import           TMPacket
-import           Text.Show.Pretty
-
-
+import           Text.Show.Pretty        hiding ( Value )
 
 prettyShowC
     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
@@ -88,10 +91,16 @@ vcSwitcherC switcherMap = awaitForever $ \meta -> do
 
 vcChain
     :: (MonadIO m, MonadReader env m, HasLogFunc env)
-    => (Int, TBQueue TMFrameMeta)
+    => PktIndex
+    -> (Int, TBQueue TMFrameMeta)
     -> ConduitT a Void m ()
-vcChain (vcid, queue) =
-    sourceTBQueue queue .| gapCheckC .| extractPacketsC .| prettyShowVcC vcid
+vcChain pktIdx (vcid, queue) =
+    sourceTBQueue queue
+        .| gapCheckC
+        .| extractPacketsC
+        .| dropIdlePktsC
+        .| convertTMPacketC pktIdx
+        .| prettyShowVcC vcid
 
 
 queueSize :: Natural
@@ -114,15 +123,19 @@ runVcChain vcid chain = do
 
 runChains
     :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env)
-    => m ()
-runChains = do
+    => PktIndex
+    -> m ()
+runChains pktIdx = do
     cfg <- getConfig <$> ask
 
     lst <- mapM createQueue $ cfgVCIDs cfg
     let switcherMap = M.fromList lst
 
     race_
-        (forConcurrently_ lst (\p@(vcid, _) -> runVcChain vcid (vcChain p)))
+        (forConcurrently_
+            lst
+            (\p@(vcid, _) -> runVcChain vcid (vcChain pktIdx p))
+        )
         (runNctrsChain switcherMap)
   where
     createQueue vcid = do
@@ -158,10 +171,14 @@ gapCheckC = go Nothing
 data PUSPacketMeta = PUSPacketMeta
     { ppMetaERT     :: !UTCTime
     , ppMetaQuality :: !QualityFlag
+    , ppVCID        :: !Word8
     , ppMetaPacket  :: !PUSPacket
     }
     deriving Show
 
+dropIdlePktsC :: (Monad m) => ConduitT PUSPacketMeta PUSPacketMeta m ()
+dropIdlePktsC =
+    filterC (\pkt -> idleApid /= (pHdrAPID . pusHdr . ppMetaPacket) pkt)
 
 
 extractPacketsC
@@ -206,10 +223,12 @@ extractPacketsC = do
     doCheckCRC meta rest (binPacket, packet) = do
         if checkCRC binPacket
             then do
-                let newPkt = PUSPacketMeta { ppMetaERT     = metaERT meta
-                                           , ppMetaQuality = metaQuality meta
-                                           , ppMetaPacket  = packet
-                                           }
+                let newPkt = PUSPacketMeta
+                        { ppMetaERT     = metaERT meta
+                        , ppMetaQuality = metaQuality meta
+                        , ppVCID = frHdrVCID . frameHdr . metaFrame $ meta
+                        , ppMetaPacket  = packet
+                        }
                 yield newPkt
                 processPacketC meta rest
             else do
@@ -238,6 +257,131 @@ extractPacketsC = do
             A.Partial cont1    -> processContPacketC metaOld cont1
 
 
+convertTMPacketC
+    :: (Monad m) => PktIndex -> ConduitT PUSPacketMeta TMPacket m ()
+convertTMPacketC pktIdx =
+    awaitForever $ \metaPkt -> yield $ convertToTMPacket pktIdx metaPkt
+
+
 
 convertToTMPacket :: PktIndex -> PUSPacketMeta -> TMPacket
-convertToTMPacket = undefined
+convertToTMPacket pktIdx metaPkt =
+    let
+        key     = PktKey apid t st
+        apid    = pHdrAPID (pusHdr pusPkt)
+        pusPkt  = ppMetaPacket metaPkt
+        (t, st) = dfhTypes (pusSecHdr pusPkt)
+    in
+        case HM.lookup key pktIdx of
+            Just packetDef ->
+                let
+                    params = V.map (extractParameter (pusData pusPkt))
+                        $ tmpParameterDefs packetDef
+                in  TMPacket { tmpName      = tmpDefName packetDef
+                             , tmpAPID      = tmpDefApid packetDef
+                             , tmpType      = t
+                             , tmpSubType   = st
+                             , tmpSSC       = pHdrSSC (pusHdr pusPkt)
+                             , tmpVCID      = ppVCID metaPkt
+                             , tmpTimestamp = pusPktTimestamp pusPkt
+                             , tmpERT       = ppMetaERT metaPkt
+                             , tmpQuality   = ppMetaQuality metaPkt
+                             , tmpParams    = params
+                             }
+            Nothing ->
+                let
+                    param = Parameter
+                        "Content"
+                        ValidityOK
+                        (ValOctet (HexBytes (pusData pusPkt)))
+                in  TMPacket { tmpName      = "UNKNOWN"
+                             , tmpAPID      = apid
+                             , tmpType      = t
+                             , tmpSubType   = st
+                             , tmpSSC       = pHdrSSC (pusHdr pusPkt)
+                             , tmpVCID      = ppVCID metaPkt
+                             , tmpTimestamp = pusPktTimestamp pusPkt
+                             , tmpERT       = ppMetaERT metaPkt
+                             , tmpQuality   = ppMetaQuality metaPkt
+                             , tmpParams    = V.singleton param
+                             }
+
+
+getParameter :: ParameterDef -> Int -> ByteString -> Value -> Parameter
+getParameter (ParameterDef name pos defVal) size dat ~newVal =
+    if (fromIntegral pos + size) <= B.length dat
+        then Parameter name ValidityOK newVal
+        else Parameter name ValidityOutOfBounds defVal
+
+
+extractParameter :: ByteString -> ParameterDef -> Parameter
+extractParameter dat def@(ParameterDef _name pos (ValUInt8 _)) =
+    getParameter def 1 dat (ValUInt8 (B.index dat (fromIntegral pos)))
+extractParameter dat def@(ParameterDef _name pos (ValUInt16 _)) =
+    getParameter def 2 dat (ValUInt16 (getWord16 dat pos))
+extractParameter dat def@(ParameterDef _name pos (ValUInt32 _)) =
+    getParameter def 4 dat (ValUInt32 (getWord32 dat pos))
+extractParameter dat def@(ParameterDef _name pos (ValFloat _)) =
+    getParameter def 4 dat (ValFloat (getFloat dat pos))
+extractParameter dat def@(ParameterDef _name pos (ValDouble _)) =
+    getParameter def 8 dat (ValDouble (getDouble dat pos))
+extractParameter dat (ParameterDef name pos defVal@(ValOctet _)) =
+    if fromIntegral pos + 1 < B.length dat
+        then
+            let len       = getWord16 dat pos
+                (_, rest) = B.splitAt (fromIntegral pos + 2) dat
+                newDat    = B.take (fromIntegral len) rest
+                l :: Int
+                l = fromIntegral pos + 2 + fromIntegral len 
+            in  if l <= B.length dat
+                    then Parameter name ValidityOK (ValOctet (HexBytes newDat))
+                    else Parameter name ValidityOutOfBounds defVal
+        else Parameter name ValidityOutOfBounds defVal
+
+
+getWord16 :: ByteString -> Word16 -> Word16
+getWord16 dat offset' =
+    let b0      = fromIntegral $ dat `B.index` offset
+        b1      = fromIntegral $ dat `B.index` (offset + 1)
+        offset  = fromIntegral offset'
+        !newVal = (b0 `shiftL` 8) .|. b1
+    in  newVal
+
+getWord32 :: ByteString -> Word16 -> Word32
+getWord32 dat offset' =
+    let
+        b0     = fromIntegral $ dat `B.index` offset
+        b1     = fromIntegral $ dat `B.index` (offset + 1)
+        b2     = fromIntegral $ dat `B.index` (offset + 2)
+        b3     = fromIntegral $ dat `B.index` (offset + 3)
+        offset = fromIntegral offset'
+        !newVal =
+            (b0 `shiftL` 24) .|. (b1 `shiftL` 16) .|. (b2 `shiftL` 8) .|. b3
+    in
+        newVal
+
+getFloat :: ByteString -> Word16 -> Float
+getFloat dat offset' = wordToFloat $ getWord32 dat offset'
+
+getDouble :: ByteString -> Word16 -> Double
+getDouble dat offset' =
+    let b0     = fromIntegral $ dat `B.index` offset
+        b1     = fromIntegral $ dat `B.index` (offset + 1)
+        b2     = fromIntegral $ dat `B.index` (offset + 2)
+        b3     = fromIntegral $ dat `B.index` (offset + 3)
+        b4     = fromIntegral $ dat `B.index` (offset + 4)
+        b5     = fromIntegral $ dat `B.index` (offset + 5)
+        b6     = fromIntegral $ dat `B.index` (offset + 6)
+        b7     = fromIntegral $ dat `B.index` (offset + 7)
+        offset = fromIntegral offset'
+        !newVal =
+            (b0 `shiftL` 56)
+                .|. (b1 `shiftL` 48)
+                .|. (b2 `shiftL` 40)
+                .|. (b3 `shiftL` 32)
+                .|. (b4 `shiftL` 24)
+                .|. (b5 `shiftL` 16)
+                .|. (b6 `shiftL` 8)
+                .|. b7
+    in  wordToDouble newVal
+

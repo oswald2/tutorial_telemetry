@@ -17,12 +17,17 @@ import           Options.Generic
 
 import           Chains
 import           GHC.Conc
+import           TMDefinitions
+
 
 
 data Options w = Options
     { version            :: w ::: Bool <?> "Display version information"
     , config             :: w ::: Maybe String <?> "Specify a config file"
     , writeDefaultConfig :: w ::: Bool <?> "Write default config to a file"
+    , writeDefaultTMDefs
+          :: w ::: Bool <?> "Write default TM Packet Definitions to a file"
+    , tmPacketDefs :: w ::: Maybe String <?> "Specify a TM Packet Definitions file"
     }
     deriving Generic
 
@@ -44,10 +49,23 @@ main = do
         writeConfig defaultConfig "DefaultConfig.json"
         T.putStrLn "Wrote default config into 'DefaultConfig.json'."
         exitSuccess
+    when (writeDefaultTMDefs opts) $ do
+        writeTMDefinitions defaultDefs "DefaultTMDefinitions.json"
+        T.putStrLn "Wrote default config into 'DefaultTMDefinitions.json'."
+        exitSuccess
     cfg <- case config opts of
         Nothing   -> pure defaultConfig
         Just file -> do
             res <- readConfig file
+            case res of
+                Left err -> do
+                    T.putStrLn err
+                    exitFailure
+                Right c -> pure c
+    defs <- generatePktIdx <$> case tmPacketDefs opts of
+        Nothing   -> pure defaultDefs
+        Just file -> do
+            res <- readTMDefinitions file
             case res of
                 Left err -> do
                     T.putStrLn err
@@ -62,4 +80,4 @@ main = do
 
         runRIO app $ do
             logInfo "Starting app"
-            runChains
+            runChains defs 
