@@ -18,6 +18,9 @@ import           CUCTime
 import           Data.Attoparsec.Binary
 import           Data.Attoparsec.ByteString    as A
 import           Data.Bits
+import           PUSTypes
+
+
 
 data PUSPktType = PusTM | PusTC
   deriving (Show)
@@ -45,10 +48,10 @@ getSeqFlags val = case val .&. 0b1100_0000_0000_0000 of
     0b0000_0000_0000_0000 -> SegCont
     0b1000_0000_0000_0000 -> SegLast
     0b1100_0000_0000_0000 -> SegStandalone
-    _                     -> absurd undefined 
+    _                     -> absurd undefined
 
 
-idleApid :: Word16 
+idleApid :: Word16
 idleApid = 0b11111111111
 
 
@@ -79,7 +82,7 @@ pusPktHdrParser = do
 
 
 data PUSSecStdHdr = PUSSecStdHdr
-    { pDfhVersion   :: !Word8
+    { pDfhVersion  :: !Word8
     , pDfhType     :: PUSType
     , pDfhSubType  :: PUSSubType
     , pDfhSourceID :: !Word8
@@ -95,20 +98,6 @@ pusSecStdHdrParser =
         <*> pusSubTypeParser
         <*> anyWord8
         <*> cucTimeParser
-
-
-newtype PUSType = PUSType Word8
-  deriving (Show)
-
-pusTypeParser :: Parser PUSType
-pusTypeParser = PUSType <$> anyWord8
-
-
-newtype PUSSubType = PUSSubType Word8
-  deriving (Show)
-
-pusSubTypeParser :: Parser PUSSubType
-pusSubTypeParser = PUSSubType <$> anyWord8
 
 
 data PUSSecHdr =

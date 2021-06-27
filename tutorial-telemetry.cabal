@@ -62,6 +62,9 @@ library
         PUSPacket
         CUCTime
         Time
+        TMDefinitions
+        TMPacket
+        PUSTypes
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -95,7 +98,8 @@ library
         time,
         pretty-show,
         stm-conduit,
-        containers
+        containers,
+        text-builder
 
     -- Directories containing source files.
     hs-source-dirs:   src
