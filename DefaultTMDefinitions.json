@@ -1,0 +1,170 @@
+[
+    {
+        "tmpDefName": "Ack_1_1",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 1,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            }
+        ]
+    },
+    {
+        "tmpDefName": "Ack_1_3",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 3,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            }
+        ]
+    },
+    {
+        "tmpDefName": "Ack_1_7",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 7,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            }
+        ]
+    },
+    {
+        "tmpDefName": "AckFail_1_2",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 2,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "FailID",
+                "parDefPos": 6,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt8"
+                }
+            }
+        ]
+    },
+    {
+        "tmpDefName": "AckFail_1_4",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 4,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "FailID",
+                "parDefPos": 6,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt8"
+                }
+            }
+        ]
+    },
+    {
+        "tmpDefName": "AckFail_1_8",
+        "tmpDefApid": 17,
+        "tmpDefType": 1,
+        "tmpDefSubType": 8,
+        "tmpParameterDefs": [
+            {
+                "parDefName": "PktID",
+                "parDefPos": 0,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "SeqCtrl",
+                "parDefPos": 2,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt16"
+                }
+            },
+            {
+                "parDefName": "FailID",
+                "parDefPos": 6,
+                "parDefValue": {
+                    "contents": 0,
+                    "tag": "ValUInt8"
+                }
+            }
+        ]
+    }
+]

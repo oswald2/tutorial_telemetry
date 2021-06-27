@@ -9,6 +9,10 @@ module PUSPacket
     , PUSPacket(..)
     , pusPktParser
     , idleApid
+    , dfhTypes
+    , dfhLength
+    , dfhTimestamp
+    , pusPktTimestamp
     ) where
 
 import           RIO
@@ -18,7 +22,9 @@ import           CUCTime
 import           Data.Attoparsec.Binary
 import           Data.Attoparsec.ByteString    as A
 import           Data.Bits
+import           Data.Time.Clock
 import           PUSTypes
+import           Time
 
 
 
@@ -115,6 +121,15 @@ dfhLength PUSEmptyHeader = 0
 dfhLength PUSStdHeader{} = 10
 
 
+dfhTypes :: PUSSecHdr -> (PUSType, PUSSubType)
+dfhTypes PUSEmptyHeader                   = (PUSType 0, PUSSubType 0)
+dfhTypes (PUSStdHeader PUSSecStdHdr {..}) = (pDfhType, pDfhSubType)
+
+dfhTimestamp :: PUSSecHdr -> Maybe CUCTime
+dfhTimestamp PUSEmptyHeader                   = Nothing
+dfhTimestamp (PUSStdHeader PUSSecStdHdr {..}) = Just pDfhTime
+
+
 data PUSPacket = PUSPacket
     { pusHdr    :: !PUSPacketHdr
     , pusSecHdr :: !PUSSecHdr
@@ -123,6 +138,9 @@ data PUSPacket = PUSPacket
     }
     deriving Show
 
+
+pusPktTimestamp :: PUSPacket -> Maybe UTCTime
+pusPktTimestamp pkt = toUTCTime <$> dfhTimestamp (pusSecHdr pkt)
 
 pusPktParser :: Parser PUSPacket
 pusPktParser = do

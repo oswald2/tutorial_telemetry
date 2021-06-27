@@ -27,10 +27,10 @@ cucTimeParser = CUCTime <$> anyWord32be <*> anyWord16be
 
 instance TimeConversion CUCTime where
     toUTCTime (CUCTime sec subsec) =
-        let days = sec `quot` 86400
+        let (days, daysInSec) = sec `quotRem` 86400
             day  = addDays (fromIntegral days) systemEpochDay
             micro :: Double
             micro = fromIntegral subsec * 1_000_000 / 65536
-            pico  = round (micro * 1_000_000)
+            pico  = fromIntegral daysInSec * 1_000_000_000_000 + round (micro * 1_000_000)
             dtime = picosecondsToDiffTime pico
         in  UTCTime day dtime
