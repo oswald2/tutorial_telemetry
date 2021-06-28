@@ -16,7 +16,11 @@ import qualified Data.Text.IO                  as T
 import           Options.Generic
 
 import           Chains
-import           GHC.Conc
+import           Classes
+import           GHC.Conc                       ( getNumProcessors
+                                                , setNumCapabilities
+                                                )
+import           Statistics
 import           TMDefinitions
 
 
@@ -27,7 +31,8 @@ data Options w = Options
     , writeDefaultConfig :: w ::: Bool <?> "Write default config to a file"
     , writeDefaultTMDefs
           :: w ::: Bool <?> "Write default TM Packet Definitions to a file"
-    , tmPacketDefs :: w ::: Maybe String <?> "Specify a TM Packet Definitions file"
+    , tmPacketDefs
+          :: w ::: Maybe String <?> "Specify a TM Packet Definitions file"
     }
     deriving Generic
 
@@ -76,8 +81,73 @@ main = do
     --let logOptions = setLogMinLevel LevelWarn logOptions'
 
     withLogFunc logOptions $ \logF -> do
-        let app = AppState { appLogFunc = logF, appConfig = cfg }
+        frameVar <- newTVarIO initialStatistics
+        pktVar   <- newTVarIO initialStatistics
+        let app = AppState { appLogFunc          = logF
+                           , appConfig           = cfg
+                           , appFrameStatistics  = frameVar
+                           , appPacketStatistics = pktVar
+                           }
 
         runRIO app $ do
             logInfo "Starting app"
-            runChains defs 
+
+            void $ async statThread 
+
+            runChains defs
+
+
+
+statThread
+    :: (MonadIO m, MonadReader env m, HasStats env, HasLogFunc env) => m ()
+statThread = do
+    env <- ask
+    go env Nothing Nothing 
+  where
+    go env oldFrameStats oldPktStats = do
+        threadDelay 2000000
+        let frameVar  = getFrameStats env
+            packetVar = getPacketStats env
+        frameStats <- readTVarIO frameVar
+        case oldFrameStats of
+            Nothing       -> pure ()
+            Just oldStats -> do
+                let (totalRate, totalDataRate) = statTotal frameStats
+                    (rate     , dataRate     ) = statCalc frameStats oldStats
+                logDebug
+                    $  "Frame Rate: total: "
+                    <> display totalRate
+                    <> " Frames/sec "
+                    <> formatBytes totalDataRate
+                    <> "   Current rate: "
+                    <> display rate
+                    <> " Frames/sec "
+                    <> formatBytes dataRate
+                    <> " Frames received: " 
+                    <> display (frameStats ^. statN)
+
+        pktStats <- readTVarIO packetVar
+        case oldPktStats of
+            Nothing       -> pure ()
+            Just oldStats -> do
+                let (totalRate, totalDataRate) = statTotal pktStats
+                    (rate     , dataRate     ) = statCalc pktStats oldStats
+                logDebug
+                    $  "Packet Rate: total: "
+                    <> display totalRate
+                    <> " Pkts/sec "
+                    <> formatBytes totalDataRate
+                    <> "   Current rate: "
+                    <> display rate
+                    <> " Pkts/sec "
+                    <> formatBytes dataRate
+                    <> " Pkts received: " 
+                    <> display (pktStats ^. statN)
+
+        go env (Just frameStats) (Just pktStats)
+
+
+    formatBytes n | n > 1_000_000_000 = display (n / 1_000_000_000) <> " GB/s"
+                  | n > 1_000_000     = display (n / 1_000_000) <> " MB/s"
+                  | n > 1_000         = display (n / 1_000) <> " KB/s"
+                  | otherwise         = display n <> " B/s"

@@ -3,15 +3,18 @@ module AppState
     , HasConfig(..)
     ) where
 
-import           Config
-import           RIO
-
 import           Classes
+import           Config
+import           Control.Lens
+import           RIO                     hiding ( lens )
+import           Statistics
 
 
 data AppState = AppState
-    { appConfig  :: !Config
-    , appLogFunc :: !LogFunc
+    { appConfig           :: !Config
+    , appFrameStatistics  :: TVar Statistics
+    , appPacketStatistics :: TVar Statistics
+    , appLogFunc          :: !LogFunc
     }
 
 
@@ -21,3 +24,8 @@ instance HasLogFunc AppState where
 
 instance HasConfig AppState where
     getConfig = appConfig
+
+
+instance HasStats AppState where 
+    getFrameStats = appFrameStatistics  
+    getPacketStats = appPacketStatistics
