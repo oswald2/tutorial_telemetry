@@ -69,7 +69,7 @@ parseByte :: AT.Parser Word8
 parseByte = do
     a <- AT.satisfy isHexDigit
     b <- AT.satisfy isHexDigit
-    pure $ fromIntegral ((ord a `shiftL` 4) .|. ord b)
+    pure $ fromIntegral ((digitToInt a `shiftL` 4) .|. digitToInt b)
 
 
 instance Show HexBytes where

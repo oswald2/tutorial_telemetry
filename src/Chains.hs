@@ -23,10 +23,13 @@ import qualified RIO.ByteString                as B
 import qualified RIO.HashMap                   as HM
 import qualified RIO.Text                      as T
 import qualified RIO.Vector                    as V
+import           Statistics
 import           TMDefinitions
 import           TMFrame
 import           TMPacket
 import           Text.Show.Pretty        hiding ( Value )
+
+
 
 prettyShowC
     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
@@ -43,7 +46,7 @@ prettyShowVcC vcid = awaitForever $ \x ->
 
 
 runNctrsChain
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env)
+    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env, HasStats env)
     => SwitcherMap
     -> m ()
 runNctrsChain switcherMap = do
@@ -57,6 +60,7 @@ runNctrsChain switcherMap = do
             $  appSource appData
             .| ncduTmC
             .| ncduToTMFrameC
+            .| frameStatC
             .| vcSwitcherC switcherMap
     case res of
         Left (_ :: IOException) -> do
@@ -90,7 +94,7 @@ vcSwitcherC switcherMap = awaitForever $ \meta -> do
 
 
 vcChain
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
+    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasStats env)
     => PktIndex
     -> (Int, TBQueue TMFrameMeta)
     -> ConduitT a Void m ()
@@ -98,9 +102,11 @@ vcChain pktIdx (vcid, queue) =
     sourceTBQueue queue
         .| gapCheckC
         .| extractPacketsC
+        .| packetStatC
         .| dropIdlePktsC
         .| convertTMPacketC pktIdx
-        .| prettyShowVcC vcid
+        .| sinkNull
+        -- .| prettyShowVcC vcid
 
 
 queueSize :: Natural
@@ -122,7 +128,7 @@ runVcChain vcid chain = do
 
 
 runChains
-    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env)
+    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env, HasStats env)
     => PktIndex
     -> m ()
 runChains pktIdx = do
@@ -332,7 +338,7 @@ extractParameter dat (ParameterDef name pos defVal@(ValOctet _)) =
                 (_, rest) = B.splitAt (fromIntegral pos + 2) dat
                 newDat    = B.take (fromIntegral len) rest
                 l :: Int
-                l = fromIntegral pos + 2 + fromIntegral len 
+                l = fromIntegral pos + 2 + fromIntegral len
             in  if l <= B.length dat
                     then Parameter name ValidityOK (ValOctet (HexBytes newDat))
                     else Parameter name ValidityOutOfBounds defVal
@@ -385,3 +391,29 @@ getDouble dat offset' =
                 .|. b7
     in  wordToDouble newVal
 
+
+
+
+frameStatC
+    :: (MonadIO m, MonadReader env m, HasConfig env, HasStats env)
+    => ConduitT TMFrameMeta TMFrameMeta m ()
+frameStatC = do
+    env <- ask
+    let frameSize = fromIntegral $ cfgTmFrameLen (getConfig env)
+    awaitForever $ \meta -> do
+        let frameStatVar = getFrameStats env 
+        now <- liftIO $ getCurrentTime 
+        atomically $ modifyTVar' frameStatVar (statNewDU now frameSize)
+        yield meta
+
+
+packetStatC
+    :: (MonadIO m, MonadReader env m, HasStats env)
+    => ConduitT PUSPacketMeta PUSPacketMeta m ()
+packetStatC = do
+    awaitForever $ \meta -> do
+        pktStatVar <- getPacketStats <$> ask
+        let pktSize = fromIntegral (pHdrLength . pusHdr . ppMetaPacket $ meta) + 1 + 6
+        now <- liftIO $ getCurrentTime 
+        atomically $ modifyTVar' pktStatVar (statNewDU now pktSize)
+        yield meta

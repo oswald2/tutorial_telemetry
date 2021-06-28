@@ -1,0 +1,10 @@
+{
+    "cfgPort": 32001,
+    "cfgVCIDs": [
+        0,
+        1,
+        7
+    ],
+    "cfgHostname": "localhost",
+    "cfgTmFrameLen": 1115
+}
