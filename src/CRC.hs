@@ -8,6 +8,7 @@ import           RIO
 import qualified RIO.ByteString                as B
 import qualified RIO.Vector.Unboxed            as V
 import qualified RIO.Vector.Unboxed.Partial    as V
+import qualified Data.Vector.Unboxed as V1
 
 import           Data.Bits
 
@@ -31,10 +32,10 @@ calcCRC :: ByteString -> Word16
 calcCRC bs = let ret = B.foldl' f 0xffff bs in fromIntegral $ ret .&. 0xFFFF
   where
     f :: Word32 -> Word8 -> Word32
-    f crc byte =
-        let !crc1    = (crc `shiftL` 8) .&. 0xFF00
-            !idx     = (crc `shiftR` 8) `xor` fromIntegral byte
-            !tableVal = crcTable V.! fromIntegral idx
+    f !crc !byte =
+        let crc1    = (crc `shiftL` 8) .&. 0xFF00
+            idx     = (crc `shiftR` 8) `xor` fromIntegral byte
+            tableVal = crcTable `V1.unsafeIndex` fromIntegral idx
         in crc1 `xor` tableVal
 
 crcLength :: Int
@@ -56,7 +57,7 @@ checkCRC bs =
 
 
 crcTable :: V.Vector Word32
-crcTable = V.fromList
+crcTable = force $  V.fromList
     [ 0x0000
     , 0x1021
     , 0x2042

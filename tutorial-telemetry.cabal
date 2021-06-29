@@ -104,7 +104,8 @@ library
         text-builder,
         reinterpret-cast,
         lens,
-        deepseq
+        deepseq,
+        vector
 
     -- Directories containing source files.
     hs-source-dirs:   src

@@ -94,7 +94,12 @@ main = do
 
             void $ async statThread 
 
-            runChains defs
+            void $ async $ runChains defs
+            let loop = do 
+                    l <- liftIO $ T.getLine 
+                    if l == "quit" then return() else loop
+            loop
+
 
 
 
