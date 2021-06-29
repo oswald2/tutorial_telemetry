@@ -22,13 +22,13 @@ import           Text.Builder
 
 
 data QualityFlag = Good | Bad
-  deriving (Show, Generic)
+  deriving (Show, Generic, NFData)
 
 
 
 
 newtype PUSType = PUSType Word8
-  deriving (Eq, Show, Generic, Hashable, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, Hashable, FromJSON, ToJSON, NFData)
 
 pusTypeParser :: A.Parser PUSType
 pusTypeParser = PUSType <$> A.anyWord8
@@ -38,7 +38,7 @@ instance Display PUSType where
 
 
 newtype PUSSubType = PUSSubType Word8
-  deriving (Eq, Show, Generic, Hashable, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, Hashable, FromJSON, ToJSON, NFData)
 
 pusSubTypeParser :: A.Parser PUSSubType
 pusSubTypeParser = PUSSubType <$> A.anyWord8

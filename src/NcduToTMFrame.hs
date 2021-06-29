@@ -25,12 +25,11 @@ data TMFrameMeta = TMFrameMeta
     , metaGap     :: Maybe (Word8, Word8)
     , metaFrame   :: !TMFrame
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 ncduToTMFrameC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasConfig env)
-    => ConduitT NcduTM TMFrameMeta m ()
+    :: ConduitT NcduTM TMFrameMeta (ResourceT (RIO AppState)) ()
 ncduToTMFrameC = do
     cfg <- getConfig <$> ask
     awaitForever $ \ncdu -> do
@@ -42,7 +41,7 @@ ncduToTMFrameC = do
                         logError $ "Error parsing TM Frame: " <> display
                             (T.pack err)
                     Right frame -> do
-                        let meta = TMFrameMeta
+                        let meta = force $ TMFrameMeta
                                 { metaERT     = toUTCTime (ncduERT ncdu)
                                 , metaQuality = ncduQuality ncdu
                                 , metaGap     = Nothing 

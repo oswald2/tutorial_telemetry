@@ -15,6 +15,7 @@ import           Data.Attoparsec.ByteString    as A
 import           Conduit
 import           Data.Conduit.Attoparsec
 
+import           AppState
 import           CDSTime
 import           PUSTypes
 
@@ -108,9 +109,7 @@ ncduTmParser = do
 
 
 
-ncduTmC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
-    => ConduitT ByteString NcduTM m ()
+ncduTmC :: ConduitT ByteString NcduTM (ResourceT (RIO AppState)) ()
 ncduTmC = conduitParserEither ncduTmParser .| sink
   where
     sink = do

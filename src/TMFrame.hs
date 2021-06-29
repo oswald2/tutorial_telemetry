@@ -24,7 +24,7 @@ data TMFrameHeader = TMFrameHeader
     , frHdrVCFC    :: !Word8
     , frHdrFHP     :: !Word16
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 idleFrameFHP :: Word16 
@@ -39,7 +39,7 @@ data TMFrame = TMFrame
     , frameData :: !ByteString
     , frameOcf  :: Maybe Word32
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 

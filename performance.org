@@ -1,0 +1,58 @@
+
+
+LLVM:
+
+2021-06-29 11:09:39.250229: [debug] Frame Rate: total: 5191.890033351016 Frames/sec 5.788957387186383 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:09:39.250475: [debug] Packet Rate: total: 30845.904277972906 Pkts/sec 5.726649020953168 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+2021-06-29 11:09:41.252426: [debug] Frame Rate: total: 5191.890033351016 Frames/sec 5.788957387186383 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:09:41.252594: [debug] Packet Rate: total: 30845.904277972906 Pkts/sec 5.726649020953168 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+
+
+2021-06-29 11:11:45.816182: [debug] Frame Rate: total: 5026.4227551470285 Frames/sec 5.604461371988936 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:11:45.816289: [debug] Packet Rate: total: 29862.826688042616 Pkts/sec 5.54413725967809 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+2021-06-29 11:11:47.818193: [debug] Frame Rate: total: 5026.4227551470285 Frames/sec 5.604461371988936 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:11:47.818430: [debug] Packet Rate: total: 29862.826688042616 Pkts/sec 5.54413725967809 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+
+
+2021-06-29 11:12:51.909224: [debug] Frame Rate: total: 5350.082287514971 Frames/sec 5.965341750579192 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:12:51.909391: [debug] Packet Rate: total: 31785.48796191283 Pkts/sec 5.901085987859678 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+2021-06-29 11:12:53.911254: [debug] Frame Rate: total: 5350.082287514971 Frames/sec 5.965341750579192 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:12:53.911448: [debug] Packet Rate: total: 31785.48796191283 Pkts/sec 5.901085987859678 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+
+
+
+
+Concrete RIO type
+
+021-06-29 11:23:28.521171: [debug] Frame Rate: total: 5155.107889452825 Frames/sec 5.747945296739899 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:23:28.521357: [debug] Packet Rate: total: 30627.338600587325 Pkts/sec 5.686071545540722 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010000
+@(src-exe/Main.hs:135:17)
+
+
+2021-06-29 11:24:51.047226: [debug] Frame Rate: total: 5108.7910547487045 Frames/sec 5.696302026044806 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170002
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:24:51.047441: [debug] Packet Rate: total: 30351.915624415968 Pkts/sec 5.634993450567529 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010002
+@(src-exe/Main.hs:135:17)
+2021-06-29 11:24:53.049238: [debug] Frame Rate: total: 5108.7910547487045 Frames/sec 5.696302026044806 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170002
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:24:53.049434: [debug] Packet Rate: total: 30351.915624415968 Pkts/sec 5.634993450567529 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010002
+@(src-exe/Main.hs:135:17)
+
+
+2021-06-29 11:26:11.651887: [debug] Frame Rate: total: 5063.905749892964 Frames/sec 5.646254911130655 MB/s   Current rate: 0.0 Frames/sec 0.0 B/s Frames received: 170000
+@(src-exe/Main.hs:117:17)
+2021-06-29 11:26:11.652054: [debug] Packet Rate: total: 30085.55025902093 Pkts/sec 5.58548113226523 MB/s   Current rate: 0.0 Pkts/sec 0.0 B/s Pkts received: 1010001
+@(src-exe/Main.hs:135:17)

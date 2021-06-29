@@ -28,12 +28,11 @@ import           TMDefinitions
 import           TMFrame
 import           TMPacket
 import           Text.Show.Pretty        hiding ( Value )
-
+import AppState
 
 
 prettyShowC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
-    => ConduitT a Void m ()
+    :: (Show a) => ConduitT a Void (RIO AppState) ()
 prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
 
 prettyShowVcC
@@ -46,9 +45,8 @@ prettyShowVcC vcid = awaitForever $ \x ->
 
 
 runNctrsChain
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env, HasStats env)
-    => SwitcherMap
-    -> m ()
+    :: SwitcherMap
+    -> RIO AppState ()
 runNctrsChain switcherMap = do
     cfg <- getConfig <$> ask
 
@@ -76,9 +74,8 @@ type SwitcherMap = IntMap (TBQueue TMFrameMeta)
 
 
 vcSwitcherC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
-    => SwitcherMap
-    -> ConduitT TMFrameMeta Void m ()
+    :: SwitcherMap
+    -> ConduitT TMFrameMeta Void (ResourceT (RIO AppState)) ()
 vcSwitcherC switcherMap = awaitForever $ \meta -> do
     let vcid = frHdrVCID . frameHdr . metaFrame $ meta
     case M.lookup (fromIntegral vcid) switcherMap of
@@ -94,10 +91,9 @@ vcSwitcherC switcherMap = awaitForever $ \meta -> do
 
 
 vcChain
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasStats env)
-    => PktIndex
+    :: PktIndex
     -> (Int, TBQueue TMFrameMeta)
-    -> ConduitT a Void m ()
+    -> ConduitT a Void (RIO AppState) ()
 vcChain pktIdx (vcid, queue) =
     sourceTBQueue queue
         .| gapCheckC
@@ -114,10 +110,9 @@ queueSize = 500
 
 
 runVcChain
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
-    => Int
-    -> ConduitT () Void m ()
-    -> m ()
+    :: Int
+    -> ConduitT () Void (RIO AppState) ()
+    -> (RIO AppState) ()
 runVcChain vcid chain = do
     runConduit chain
     logWarn
@@ -128,9 +123,8 @@ runVcChain vcid chain = do
 
 
 runChains
-    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env, HasStats env)
-    => PktIndex
-    -> m ()
+    :: PktIndex
+    -> RIO AppState ()
 runChains pktIdx = do
     cfg <- getConfig <$> ask
 
@@ -149,7 +143,7 @@ runChains pktIdx = do
         pure (fromIntegral vcid, queue)
 
 
-gapCheckC :: (Monad m) => ConduitT TMFrameMeta TMFrameMeta m ()
+gapCheckC :: ConduitT TMFrameMeta TMFrameMeta (RIO AppState) ()
 gapCheckC = go Nothing
   where
     go oldVCFC' = do
@@ -180,16 +174,15 @@ data PUSPacketMeta = PUSPacketMeta
     , ppVCID        :: !Word8
     , ppMetaPacket  :: !PUSPacket
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
-dropIdlePktsC :: (Monad m) => ConduitT PUSPacketMeta PUSPacketMeta m ()
+dropIdlePktsC :: ConduitT PUSPacketMeta PUSPacketMeta (RIO AppState) ()
 dropIdlePktsC =
     filterC (\pkt -> idleApid /= (pHdrAPID . pusHdr . ppMetaPacket) pkt)
 
 
 extractPacketsC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
-    => ConduitT TMFrameMeta PUSPacketMeta m ()
+    :: ConduitT TMFrameMeta PUSPacketMeta (RIO AppState) ()
 extractPacketsC = do
     x <- await
     case x of
@@ -235,7 +228,7 @@ extractPacketsC = do
                         , ppVCID = frHdrVCID . frameHdr . metaFrame $ meta
                         , ppMetaPacket  = packet
                         }
-                yield newPkt
+                yield (force newPkt)
                 processPacketC meta rest
             else do
                 logError
@@ -264,7 +257,7 @@ extractPacketsC = do
 
 
 convertTMPacketC
-    :: (Monad m) => PktIndex -> ConduitT PUSPacketMeta TMPacket m ()
+    :: PktIndex -> ConduitT PUSPacketMeta TMPacket (RIO AppState) ()
 convertTMPacketC pktIdx =
     awaitForever $ \metaPkt -> yield $ convertToTMPacket pktIdx metaPkt
 
@@ -395,8 +388,7 @@ getDouble dat offset' =
 
 
 frameStatC
-    :: (MonadIO m, MonadReader env m, HasConfig env, HasStats env)
-    => ConduitT TMFrameMeta TMFrameMeta m ()
+    :: ConduitT TMFrameMeta TMFrameMeta (ResourceT (RIO AppState)) ()
 frameStatC = do
     env <- ask
     let frameSize = fromIntegral $ cfgTmFrameLen (getConfig env)
@@ -408,8 +400,7 @@ frameStatC = do
 
 
 packetStatC
-    :: (MonadIO m, MonadReader env m, HasStats env)
-    => ConduitT PUSPacketMeta PUSPacketMeta m ()
+    :: ConduitT PUSPacketMeta PUSPacketMeta (RIO AppState) ()
 packetStatC = do
     awaitForever $ \meta -> do
         pktStatVar <- getPacketStats <$> ask
