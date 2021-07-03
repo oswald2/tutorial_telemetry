@@ -122,7 +122,8 @@ executable tutorial-telemetry
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:
+        GUI.MainWindow
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -149,11 +150,14 @@ executable tutorial-telemetry
         attoparsec-binary,
         text,
         optparse-generic,
-        pretty-show
+        pretty-show,
+        gi-gtk,
+        gi-gtk-hs
 
 
     -- Directories containing source files.
     hs-source-dirs:   src-exe
+    c-sources: csrc/resources.c
 
     -- Base language which the package is written in.
     default-language: Haskell2010

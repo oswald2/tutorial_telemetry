@@ -19,6 +19,10 @@ import           Chains
 import           GHC.Conc
 import           TMDefinitions
 
+import qualified GI.Gtk                        as Gtk
+
+import           GUI.MainWindow
+
 
 
 data Options w = Options
@@ -27,7 +31,8 @@ data Options w = Options
     , writeDefaultConfig :: w ::: Bool <?> "Write default config to a file"
     , writeDefaultTMDefs
           :: w ::: Bool <?> "Write default TM Packet Definitions to a file"
-    , tmPacketDefs :: w ::: Maybe String <?> "Specify a TM Packet Definitions file"
+    , tmPacketDefs
+          :: w ::: Maybe String <?> "Specify a TM Packet Definitions file"
     }
     deriving Generic
 
@@ -72,6 +77,9 @@ main = do
                     exitFailure
                 Right c -> pure c
 
+    void $ Gtk.init Nothing
+    mainWindow <- initMainWindow
+
     logOptions <- logOptionsHandle stderr True
     --let logOptions = setLogMinLevel LevelWarn logOptions'
 
@@ -80,4 +88,6 @@ main = do
 
         runRIO app $ do
             logInfo "Starting app"
-            runChains defs 
+
+            --runChains defs
+            Gtk.main
