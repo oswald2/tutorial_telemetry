@@ -43,7 +43,7 @@ data TMPacketDef = TMPacketDef
     , tmpDefSubType    :: PUSSubType
     , tmpParameterDefs :: Vector ParameterDef
     }
-    deriving (Show, Generic, FromJSON, ToJSON)
+    deriving (Show, Generic, FromJSON, ToJSON, NFData)
 
 
 data ParameterDef = ParameterDef
@@ -51,7 +51,7 @@ data ParameterDef = ParameterDef
     , parDefPos   :: !Word16
     , parDefValue :: !Value
     }
-    deriving (Show, Generic, FromJSON, ToJSON)
+    deriving (Show, Generic, FromJSON, ToJSON, NFData)
 
 
 data Value =
@@ -61,7 +61,7 @@ data Value =
     | ValFloat !Float
     | ValDouble !Double
     | ValOctet !HexBytes
-    deriving (Show, Generic, FromJSON, ToJSON)
+    deriving (Show, Generic, FromJSON, ToJSON, NFData)
 
 
 encConfig :: A.Config

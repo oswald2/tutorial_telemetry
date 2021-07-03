@@ -180,7 +180,7 @@ data PUSPacketMeta = PUSPacketMeta
     , ppVCID        :: !Word8
     , ppMetaPacket  :: !PUSPacket
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 dropIdlePktsC :: (Monad m) => ConduitT PUSPacketMeta PUSPacketMeta m ()
 dropIdlePktsC =
@@ -235,7 +235,7 @@ extractPacketsC = do
                         , ppVCID = frHdrVCID . frameHdr . metaFrame $ meta
                         , ppMetaPacket  = packet
                         }
-                yield newPkt
+                yield (force newPkt)
                 processPacketC meta rest
             else do
                 logError
@@ -266,7 +266,7 @@ extractPacketsC = do
 convertTMPacketC
     :: (Monad m) => PktIndex -> ConduitT PUSPacketMeta TMPacket m ()
 convertTMPacketC pktIdx =
-    awaitForever $ \metaPkt -> yield $ convertToTMPacket pktIdx metaPkt
+    awaitForever $ \metaPkt -> yield $ force (convertToTMPacket pktIdx metaPkt)
 
 
 

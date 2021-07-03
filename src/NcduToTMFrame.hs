@@ -25,7 +25,7 @@ data TMFrameMeta = TMFrameMeta
     , metaGap     :: Maybe (Word8, Word8)
     , metaFrame   :: !TMFrame
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 ncduToTMFrameC
@@ -48,6 +48,6 @@ ncduToTMFrameC = do
                                 , metaGap     = Nothing 
                                 , metaFrame   = frame
                                 }
-                        yield meta
+                        yield (force meta)
             else do
                 logError $ "CRC error on frame: " <> display (T.pack (show dat))

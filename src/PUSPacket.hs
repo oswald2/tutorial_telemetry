@@ -29,7 +29,7 @@ import           Time
 
 
 data PUSPktType = PusTM | PusTC
-  deriving (Show)
+  deriving (Show, Generic, NFData)
 
 getType :: Word16 -> PUSPktType
 getType val = if val .&. 0b0001_0000_0000_0000 == 0 then PusTM else PusTC
@@ -44,7 +44,7 @@ data PUSPktSeqFlags =
   | SegCont
   | SegLast
   | SegStandalone
-  deriving (Eq, Ord, Enum, Show)
+  deriving (Eq, Ord, Enum, Show, Generic, NFData)
 
 
 
@@ -69,7 +69,7 @@ data PUSPacketHdr = PUSPacketHdr
     , pHdrSSC      :: !Word16
     , pHdrLength   :: !Word16
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 pusPktHdrParser :: Parser PUSPacketHdr
 pusPktHdrParser = do
@@ -94,7 +94,7 @@ data PUSSecStdHdr = PUSSecStdHdr
     , pDfhSourceID :: !Word8
     , pDfhTime     :: !CUCTime
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 pusSecStdHdrParser :: Parser PUSSecStdHdr
 pusSecStdHdrParser =
@@ -109,7 +109,7 @@ pusSecStdHdrParser =
 data PUSSecHdr =
     PUSEmptyHeader
     | PUSStdHeader PUSSecStdHdr
-  deriving (Show)
+  deriving (Show, Generic, NFData)
 
 
 pusSecHdrParser :: Bool -> Parser PUSSecHdr
@@ -136,7 +136,7 @@ data PUSPacket = PUSPacket
     , pusData   :: !ByteString
     , pusCRC    :: !Word16
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 pusPktTimestamp :: PUSPacket -> Maybe UTCTime

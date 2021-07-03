@@ -17,7 +17,7 @@ data CUCTime = CUCTime
     { cucSeconds :: !Word32
     , cucSubSec  :: !Word16
     }
-    deriving Show
+    deriving (Show, Generic, NFData)
 
 
 cucTimeParser :: Parser CUCTime

@@ -24,14 +24,14 @@ data TMPacket = TMPacket
     , tmpQuality   :: !QualityFlag
     , tmpParams    :: Vector Parameter
     }
-    deriving (Show, Generic)
+    deriving (Show, Generic, NFData)
 
 
 
 data Validity =
   ValidityOK
   | ValidityOutOfBounds
-  deriving (Eq, Ord, Enum, Show, Generic)
+  deriving (Eq, Ord, Enum, Show, Generic, NFData)
 
 
 data Parameter = Parameter
@@ -39,7 +39,7 @@ data Parameter = Parameter
     , paramValidity :: !Validity
     , paramValue    :: !Value
     }
-    deriving (Show, Generic)
+    deriving (Show, Generic, NFData)
 
 
 
