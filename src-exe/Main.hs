@@ -21,9 +21,9 @@ import           TMDefinitions
 
 import qualified GI.Gtk                        as Gtk
 
+import           Events
+import           GUI.EventProcessor
 import           GUI.MainWindow
-
-
 
 data Options w = Options
     { version            :: w ::: Bool <?> "Display version information"
@@ -79,15 +79,20 @@ main = do
 
     void $ Gtk.init Nothing
     mainWindow <- initMainWindow
+    re         <- newRaiseEvent (processEvent mainWindow)
 
     logOptions <- logOptionsHandle stderr True
     --let logOptions = setLogMinLevel LevelWarn logOptions'
 
     withLogFunc logOptions $ \logF -> do
-        let app = AppState { appLogFunc = logF, appConfig = cfg }
+        let
+            app = AppState { appLogFunc    = logF
+                           , appConfig     = cfg
+                           , appRaiseEvent = re
+                           }
 
         runRIO app $ do
             logInfo "Starting app"
 
-            --runChains defs
+            void $ async $ runChains defs
             Gtk.main

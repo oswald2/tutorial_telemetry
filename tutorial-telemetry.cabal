@@ -65,6 +65,7 @@ library
         TMDefinitions
         TMPacket
         PUSTypes
+        Events
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -124,6 +125,7 @@ executable tutorial-telemetry
     -- Modules included in this executable, other than Main.
     other-modules:
         GUI.MainWindow
+        GUI.EventProcessor
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

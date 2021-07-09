@@ -14,6 +14,7 @@ import           Data.Conduit.TQueue
 import qualified Data.IntMap.Strict            as M
 import           Data.ReinterpretCast
 import           Data.Time.Clock
+import           Events
 import           NCTRS
 import           NcduToTMFrame
 import           PUSPacket
@@ -27,6 +28,7 @@ import           TMDefinitions
 import           TMFrame
 import           TMPacket
 import           Text.Show.Pretty        hiding ( Value )
+
 
 prettyShowC
     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
@@ -43,7 +45,7 @@ prettyShowVcC vcid = awaitForever $ \x ->
 
 
 runNctrsChain
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env)
+    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env, HasRaiseEvent env)
     => SwitcherMap
     -> m ()
 runNctrsChain switcherMap = do
@@ -53,6 +55,7 @@ runNctrsChain switcherMap = do
                                   (encodeUtf8 (cfgHostname cfg))
 
     res <- try $ runGeneralTCPClient settings $ \appData -> do
+        raiseEvent EventConnected
         runConduitRes
             $  appSource appData
             .| ncduTmC
@@ -61,9 +64,12 @@ runNctrsChain switcherMap = do
     case res of
         Left (_ :: IOException) -> do
             logWarn "Could not connect, reconnecting..."
+            raiseEvent EventDisconnected 
             threadDelay 2_000_000
             runNctrsChain switcherMap
-        Right _ -> runNctrsChain switcherMap
+        Right _ -> do
+            raiseEvent EventDisconnected 
+            runNctrsChain switcherMap
 
 
 
@@ -122,7 +128,7 @@ runVcChain vcid chain = do
 
 
 runChains
-    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env)
+    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env, HasRaiseEvent env)
     => PktIndex
     -> m ()
 runChains pktIdx = do
@@ -332,7 +338,7 @@ extractParameter dat (ParameterDef name pos defVal@(ValOctet _)) =
                 (_, rest) = B.splitAt (fromIntegral pos + 2) dat
                 newDat    = B.take (fromIntegral len) rest
                 l :: Int
-                l = fromIntegral pos + 2 + fromIntegral len 
+                l = fromIntegral pos + 2 + fromIntegral len
             in  if l <= B.length dat
                     then Parameter name ValidityOK (ValOctet (HexBytes newDat))
                     else Parameter name ValidityOutOfBounds defVal

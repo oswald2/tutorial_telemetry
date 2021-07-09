@@ -1,6 +1,7 @@
 module GUI.MainWindow
     ( MainWindow
     , initMainWindow
+    , mwSetConnected
     ) where
 
 import           RIO
@@ -12,22 +13,65 @@ import           GI.Gtk                        as Gtk
 
 
 data MainWindow = MainWindow
-    { mwWindow :: !ApplicationWindow
+    { mwWindow     :: !ApplicationWindow
+    , mwConnection :: !Entry
     }
 
 
 initMainWindow :: (MonadIO m) => m MainWindow
 initMainWindow = do
-    builder <- builderNewFromResource "/gui/data/interface.ui"
+    builder   <- builderNewFromResource "/gui/data/interface.ui"
 
-    window  <- getObject builder "mainWindow" ApplicationWindow
+    window    <- getObject builder "mainWindow" ApplicationWindow
+    connEntry <- getObject builder "entryConnection" Entry
 
-    let gui = MainWindow { mwWindow = window }
+    setupEntryCSS connEntry 
+
+    let gui = MainWindow { mwWindow = window, mwConnection = connEntry }
 
     void $ onWidgetDestroy window Gtk.mainQuit
     Gtk.widgetShowAll window
     pure gui
 
+
+
+
+mwSetConnected :: (MonadIO m) => MainWindow -> Bool -> m () 
+mwSetConnected gui True = do 
+    entrySetText (mwConnection gui) "CONNECTED"
+    widgetSetName (mwConnection gui) "green-entry"
+mwSetConnected gui False = do 
+    entrySetText (mwConnection gui) "DISCONNECTED"
+    widgetSetName (mwConnection gui) "warn-entry"
+
+
+css :: ByteString
+css =
+    "entry { min-height: 0px; }\
+    \#error-entry {\
+      \   background-color: #ff0000;\
+      \   color: white;\
+      \   border-radius: 20px;\
+      \}\
+      \#warn-entry {\
+      \   background-color: #ffff00;\
+      \   color: black;\
+      \   border-radius: 20px;\
+      \}\
+      \#green-entry {\
+      \   background-color: #00BB00;\
+      \   color: black;\
+      \   border-radius: 20px;\
+      \}"
+
+
+setupEntryCSS :: (MonadIO m) => Entry -> m ()
+setupEntryCSS entry = do 
+    widgetSetSensitive entry False 
+    provider <- cssProviderNew 
+    cssProviderLoadFromData provider css 
+    context <- widgetGetStyleContext entry 
+    styleContextAddProvider context provider 600
 
 
 
