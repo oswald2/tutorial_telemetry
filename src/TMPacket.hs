@@ -43,3 +43,6 @@ data Parameter = Parameter
 
 
 
+instance Display Validity where 
+    display ValidityOK = "OK"
+    display ValidityOutOfBounds = "OOB"

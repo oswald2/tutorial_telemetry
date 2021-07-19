@@ -3,7 +3,7 @@
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkApplicationWindow" id="mainWindow">
-    <property name="width_request">1000</property>
+    <property name="width_request">1400</property>
     <property name="height_request">800</property>
     <property name="can_focus">False</property>
     <child type="titlebar">
@@ -217,7 +217,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="orientation">vertical</property>
-            <property name="position">603</property>
+            <property name="position">600</property>
             <child>
               <object class="GtkNotebook">
                 <property name="visible">True</property>
@@ -228,11 +228,12 @@
                     <property name="can_focus">False</property>
                     <child>
                       <object class="GtkScrolledWindow">
+                        <property name="width_request">640</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkTreeView">
+                          <object class="GtkTreeView" id="treeviewPacket">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <child internal-child="selection">
@@ -294,7 +295,7 @@
                             <property name="can_focus">True</property>
                             <property name="shadow_type">in</property>
                             <child>
-                              <object class="GtkTreeView">
+                              <object class="GtkTreeView" id="treeviewParams">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <child internal-child="selection">

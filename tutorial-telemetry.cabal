@@ -126,6 +126,7 @@ executable tutorial-telemetry
     other-modules:
         GUI.MainWindow
         GUI.EventProcessor
+        GUI.Colors
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -154,7 +155,9 @@ executable tutorial-telemetry
         optparse-generic,
         pretty-show,
         gi-gtk,
-        gi-gtk-hs
+        gi-gtk-hs,
+        haskell-gi-base,
+        gi-gdk
 
 
     -- Directories containing source files.

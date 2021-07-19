@@ -64,6 +64,16 @@ data Value =
     deriving (Show, Generic, FromJSON, ToJSON)
 
 
+instance Display Value where
+    display (ValUInt8  x) = display x
+    display (ValUInt16 x) = display x
+    display (ValUInt32 x) = display x
+    display (ValFloat  x) = display x
+    display (ValDouble x) = display x
+    display (ValOctet  x) = display x
+
+
+
 encConfig :: A.Config
 encConfig = defConfig { confCompare = compareFunc }
   where

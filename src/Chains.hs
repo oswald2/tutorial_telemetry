@@ -35,13 +35,13 @@ prettyShowC
     => ConduitT a Void m ()
 prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
 
-prettyShowVcC
-    :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
-    => Int
-    -> ConduitT a Void m ()
-prettyShowVcC vcid = awaitForever $ \x ->
-    logDebug $ "VC " <> display vcid <> display '\n' <> display
-        (T.pack (ppShow x))
+-- prettyShowVcC
+--     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
+--     => Int
+--     -> ConduitT a Void m ()
+-- prettyShowVcC vcid = awaitForever $ \x ->
+--     logDebug $ "VC " <> display vcid <> display '\n' <> display
+--         (T.pack (ppShow x))
 
 
 runNctrsChain
@@ -96,17 +96,21 @@ vcSwitcherC switcherMap = awaitForever $ \meta -> do
 
 
 vcChain
-    :: (MonadIO m, MonadReader env m, HasLogFunc env)
+    :: (MonadIO m, MonadReader env m, HasLogFunc env, HasRaiseEvent env)
     => PktIndex
     -> (Int, TBQueue TMFrameMeta)
     -> ConduitT a Void m ()
-vcChain pktIdx (vcid, queue) =
+vcChain pktIdx (_vcid, queue) =
     sourceTBQueue queue
         .| gapCheckC
         .| extractPacketsC
         .| dropIdlePktsC
         .| convertTMPacketC pktIdx
-        .| prettyShowVcC vcid
+        .| raisePacketC
+
+
+raisePacketC :: (MonadIO m, MonadReader env m, HasRaiseEvent env) => ConduitT TMPacket Void m () 
+raisePacketC = awaitForever $ \pkt -> raiseEvent (EventTMPacket pkt)
 
 
 queueSize :: Natural

@@ -10,6 +10,6 @@ import           Events
 import           GUI.MainWindow
 
 processEvent :: MainWindow -> Event -> IO ()
-processEvent gui EventConnected    = postGUIASync $ mwSetConnected gui True
-processEvent gui EventDisconnected = postGUIASync $ mwSetConnected gui False
-processEvent _   _                 = pure ()
+processEvent gui EventConnected      = postGUIASync $ mwSetConnected gui True
+processEvent gui EventDisconnected   = postGUIASync $ mwSetConnected gui False
+processEvent gui (EventTMPacket pkt) = postGUIASync $ mwAddTmPacket gui pkt
