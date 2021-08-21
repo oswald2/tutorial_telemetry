@@ -4,6 +4,7 @@ module GUI.MainWindow
     , initMainWindow
     , mwSetConnected
     , mwAddTmPacket
+    , mwLog
     ) where
 
 import           RIO
@@ -11,6 +12,7 @@ import qualified RIO.Text                      as T
 import qualified RIO.Vector                    as V
 
 import           Data.GI.Base.Attributes
+import           Data.GI.Gtk.Threading
 import           GI.Gtk                        as Gtk
 
 import           Data.GI.Gtk.ModelView.CellLayout
@@ -20,14 +22,22 @@ import           TMPacket
 
 import           GUI.Colors
 
+import           Data.Time.Clock
+
+
 data MainWindow = MainWindow
     { mwWindow         :: !ApplicationWindow
     , mwConnection     :: !Entry
     , mwTreeviewPacket :: !TreeView
     , mwTreeViewParams :: !TreeView
+    , mwLogDisp        :: !TreeView
     , mwPacketModel    :: SeqStore TMPacket
     , mwParamModel     :: SeqStore Parameter
+    , mwLogModel       :: SeqStore LogMsg
     }
+
+
+data LogMsg = LogMsg !UTCTime !LogLevel !Text
 
 
 initMainWindow :: (MonadIO m) => m MainWindow
@@ -38,19 +48,23 @@ initMainWindow = do
     connEntry <- getObject builder "entryConnection" Entry
     tvPacket  <- getObject builder "treeviewPacket" TreeView
     tvParams  <- getObject builder "treeviewParams" TreeView
+    logDisp   <- getObject builder "treeviewLogMsgs" TreeView
+
 
     setupEntryCSS connEntry
 
     packetModel <- initPktDisplay tvPacket
     paramModel  <- initParamDisplay tvParams
-
+    logModel    <- initLogDisplay logDisp
 
     let gui = MainWindow { mwWindow         = window
                          , mwConnection     = connEntry
                          , mwTreeviewPacket = tvPacket
                          , mwTreeViewParams = tvParams
+                         , mwLogDisp        = logDisp
                          , mwPacketModel    = packetModel
                          , mwParamModel     = paramModel
+                         , mwLogModel       = logModel
                          }
 
     void $ onWidgetDestroy window Gtk.mainQuit
@@ -93,6 +107,54 @@ displayParams gui params = do
     seqStoreClear model
     V.mapM_ (seqStoreAppend model) params
 
+initLogDisplay :: (MonadIO m) => TreeView -> m (SeqStore LogMsg)
+initLogDisplay tv = do
+    model <- seqStoreNew []
+    treeViewSetModel tv (Just model)
+
+    mapM_ (createColumn tv model)
+        $ [ ("Time"   , 250 , timeAttrs)
+          , ("Level"  , 80  , levelAttrs)
+          , ("Message", 8000, \(LogMsg _ _ msg) -> [#text := msg])
+          ]
+    pure model
+  where
+    timeAttrs :: LogMsg -> [AttrOp CellRendererText 'AttrSet]
+    timeAttrs (LogMsg t _ _) = [#text := T.pack (show t)]
+
+    levelAttrs :: LogMsg -> [AttrOp CellRendererText 'AttrSet]
+    levelAttrs (LogMsg _ LevelDebug _) = (#text := "DEBUG") : colors LevelDebug
+    levelAttrs (LogMsg _ LevelInfo _) = (#text := "INFO") : colors LevelInfo
+    levelAttrs (LogMsg _ LevelWarn _) = (#text := "WARNING") : colors LevelWarn
+    levelAttrs (LogMsg _ LevelError _) = (#text := "ERROR") : colors LevelError
+    levelAttrs (LogMsg _ l@(LevelOther x) _) = (#text := x) : colors l
+
+    colors :: LogLevel -> [AttrOp CellRendererText 'AttrSet]
+    colors LevelDebug = [#backgroundSet := False, #foregroundSet := False]
+    colors LevelInfo =
+        [ #backgroundSet := True
+        , #foregroundSet := True
+        , #backgroundRgba := green
+        , #foregroundRgba := black
+        ]
+    colors LevelWarn =
+        [ #backgroundSet := True
+        , #foregroundSet := True
+        , #backgroundRgba := yellow
+        , #foregroundRgba := black
+        ]
+    colors LevelError =
+        [ #backgroundSet := True
+        , #foregroundSet := True
+        , #backgroundRgba := red
+        , #foregroundRgba := white
+        ]
+    colors (LevelOther _) =
+        [ #backgroundSet := True
+        , #foregroundSet := True
+        , #backgroundRgba := red
+        , #foregroundRgba := white
+        ]
 
 
 initPktDisplay :: (MonadIO m) => TreeView -> m (SeqStore TMPacket)
@@ -225,4 +287,34 @@ getObject builder obj gtkConstr = do
                 Nothing -> error $ "GTK: cannot cast widget " <> T.unpack obj
                 Just widget -> return widget
 
+
+
+
+mwLog
+    :: MainWindow -> CallStack -> LogSource -> LogLevel -> Utf8Builder -> IO ()
+mwLog gui _ _ LevelInfo      msg = postGUIASync $ doLog gui LevelInfo msg
+mwLog gui _ _ LevelWarn      msg = postGUIASync $ doLog gui LevelWarn msg
+mwLog gui _ _ LevelError     msg = postGUIASync $ doLog gui LevelError msg
+mwLog gui _ _ (LevelOther x) msg = postGUIASync $ doLog gui (LevelOther x) msg
+mwLog _ _ _ _ _ = pure ()
+
+
+doLog :: MainWindow -> LogLevel -> Utf8Builder -> IO ()
+doLog gui level msg = do
+    now <- getCurrentTime
+    let logMsg  = LogMsg now level (utf8BuilderToText msg)
+        logSize = 200
+        model   = mwLogModel gui
+
+    n <- seqStoreGetSize model
+    when (n > logSize) $ seqStoreRemove model (n - 1)
+    void $ seqStorePrepend model logMsg
+
+    row <- treePathNewFromIndices [0]
+    treeViewScrollToCell (mwLogDisp gui)
+                         (Just row)
+                         (Nothing :: Maybe TreeViewColumn)
+                         False
+                         0
+                         0
 

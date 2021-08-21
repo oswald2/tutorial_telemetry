@@ -217,7 +217,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="orientation">vertical</property>
-            <property name="position">600</property>
+            <property name="position">601</property>
             <child>
               <object class="GtkNotebook">
                 <property name="visible">True</property>

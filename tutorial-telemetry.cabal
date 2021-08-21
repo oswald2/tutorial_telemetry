@@ -157,7 +157,8 @@ executable tutorial-telemetry
         gi-gtk,
         gi-gtk-hs,
         haskell-gi-base,
-        gi-gdk
+        gi-gdk, 
+        time
 
 
     -- Directories containing source files.

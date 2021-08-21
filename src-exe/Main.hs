@@ -86,10 +86,11 @@ main = do
 
     withLogFunc logOptions $ \logF -> do
         let
-            app = AppState { appLogFunc    = logF
+            app = AppState { appLogFunc    = logF <> guiLogFunc
                            , appConfig     = cfg
                            , appRaiseEvent = re
                            }
+            guiLogFunc = mkLogFunc (mwLog mainWindow)
 
         runRIO app $ do
             logInfo "Starting app"
