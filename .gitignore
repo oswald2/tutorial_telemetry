@@ -24,3 +24,4 @@ cabal.project.local~
 data/interface.ui~
 .gitignore
 data/interface.ui~
+data/#interface.ui#
