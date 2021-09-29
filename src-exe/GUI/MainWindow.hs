@@ -21,6 +21,7 @@ import           PUSTypes
 import           TMPacket
 
 import           GUI.Colors
+import           GUI.Chart 
 
 import           Data.Time.Clock
 
@@ -34,6 +35,7 @@ data MainWindow = MainWindow
     , mwPacketModel    :: SeqStore TMPacket
     , mwParamModel     :: SeqStore Parameter
     , mwLogModel       :: SeqStore LogMsg
+    , mwChart          :: !ChartWidget 
     }
 
 
@@ -49,13 +51,15 @@ initMainWindow = do
     tvPacket  <- getObject builder "treeviewPacket" TreeView
     tvParams  <- getObject builder "treeviewParams" TreeView
     logDisp   <- getObject builder "treeviewLogMsgs" TreeView
-
+    chartArea <- getObject builder "areaChart" DrawingArea
 
     setupEntryCSS connEntry
 
     packetModel <- initPktDisplay tvPacket
     paramModel  <- initParamDisplay tvParams
     logModel    <- initLogDisplay logDisp
+
+    chart <- initChartWidget chartArea 
 
     let gui = MainWindow { mwWindow         = window
                          , mwConnection     = connEntry
@@ -65,6 +69,7 @@ initMainWindow = do
                          , mwPacketModel    = packetModel
                          , mwParamModel     = paramModel
                          , mwLogModel       = logModel
+                         , mwChart          = chart 
                          }
 
     void $ onWidgetDestroy window Gtk.mainQuit

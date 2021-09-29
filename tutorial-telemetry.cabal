@@ -127,6 +127,7 @@ executable tutorial-telemetry
         GUI.MainWindow
         GUI.EventProcessor
         GUI.Colors
+        GUI.Chart
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -158,6 +159,10 @@ executable tutorial-telemetry
         gi-gtk-hs,
         haskell-gi-base,
         gi-gdk, 
+        Chart,
+        Chart-gi-cairo,
+        gi-cairo,
+        gi-cairo-connector,
         time
 
 

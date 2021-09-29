@@ -330,7 +330,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkDrawingArea">
+                  <object class="GtkDrawingArea" id="areaChart">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
