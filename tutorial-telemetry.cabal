@@ -163,7 +163,8 @@ executable tutorial-telemetry
         Chart-gi-cairo,
         gi-cairo,
         gi-cairo-connector,
-        time
+        time,
+        containers
 
 
     -- Directories containing source files.

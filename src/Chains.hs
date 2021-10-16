@@ -32,8 +32,10 @@ import           Text.Show.Pretty        hiding ( Value )
 
 prettyShowC
     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
-    => ConduitT a Void m ()
-prettyShowC = awaitForever $ \x -> logDebug $ display (T.pack (ppShow x))
+    => ConduitT a a m ()
+prettyShowC = awaitForever $ \x -> do
+    logDebug $ display (T.pack (ppShow x))
+    yield x
 
 -- prettyShowVcC
 --     :: (MonadIO m, MonadReader env m, HasLogFunc env, Show a)
@@ -60,6 +62,7 @@ runNctrsChain switcherMap = do
             $  appSource appData
             .| ncduTmC
             .| ncduToTMFrameC
+            .| prettyShowC
             .| vcSwitcherC switcherMap
     case res of
         Left (_ :: IOException) -> do

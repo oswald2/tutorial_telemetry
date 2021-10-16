@@ -20,10 +20,12 @@ import           Data.GI.Gtk.ModelView.SeqStore
 import           PUSTypes
 import           TMPacket
 
+import           GUI.Chart
 import           GUI.Colors
-import           GUI.Chart 
 
 import           Data.Time.Clock
+import           TMDefinitions
+--import           TMPacket
 
 
 data MainWindow = MainWindow
@@ -35,7 +37,7 @@ data MainWindow = MainWindow
     , mwPacketModel    :: SeqStore TMPacket
     , mwParamModel     :: SeqStore Parameter
     , mwLogModel       :: SeqStore LogMsg
-    , mwChart          :: !ChartWidget 
+    , mwChart          :: !ChartWidget
     }
 
 
@@ -59,7 +61,7 @@ initMainWindow = do
     paramModel  <- initParamDisplay tvParams
     logModel    <- initLogDisplay logDisp
 
-    chart <- initChartWidget chartArea 
+    chart       <- initChartWidget chartArea
 
     let gui = MainWindow { mwWindow         = window
                          , mwConnection     = connEntry
@@ -69,7 +71,7 @@ initMainWindow = do
                          , mwPacketModel    = packetModel
                          , mwParamModel     = paramModel
                          , mwLogModel       = logModel
-                         , mwChart          = chart 
+                         , mwChart          = chart
                          }
 
     void $ onWidgetDestroy window Gtk.mainQuit
@@ -104,6 +106,16 @@ mwAddTmPacket gui packet = do
                          False
                          0
                          0
+
+    timestamp <- case tmpTimestamp packet of
+        Just t  -> pure t
+        Nothing -> liftIO $ getCurrentTime
+
+    let validValues =
+            filter (isValid . paramValidity) . V.toList $ tmpParams packet
+        convertedValues p = (paramName p, timestamp, toDouble (paramValue p))
+
+    chartWidgetAddValues (mwChart gui) (map convertedValues validValues)
 
 
 displayParams :: (MonadIO m) => MainWindow -> Vector Parameter -> m ()
@@ -301,7 +313,7 @@ mwLog gui _ _ LevelInfo      msg = postGUIASync $ doLog gui LevelInfo msg
 mwLog gui _ _ LevelWarn      msg = postGUIASync $ doLog gui LevelWarn msg
 mwLog gui _ _ LevelError     msg = postGUIASync $ doLog gui LevelError msg
 mwLog gui _ _ (LevelOther x) msg = postGUIASync $ doLog gui (LevelOther x) msg
-mwLog _ _ _ _ _ = pure ()
+mwLog _   _ _ _              _   = pure ()
 
 
 doLog :: MainWindow -> LogLevel -> Utf8Builder -> IO ()

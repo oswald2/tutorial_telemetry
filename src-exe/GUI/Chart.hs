@@ -4,10 +4,14 @@
 module GUI.Chart
     ( initChartWidget
     , ChartWidget
+    , chartWidgetAddValues
     ) where
 
 import           RIO                     hiding ( (.~) )
+import qualified RIO.Map                       as M
+import qualified RIO.Text                      as T
 
+import           Data.GI.Gtk.Threading
 import           GI.Cairo                      as Cairo
 import           GI.Gtk                        as Gtk
 
@@ -17,62 +21,92 @@ import           Graphics.Rendering.Chart.Backend.GI.Cairo
 import           Graphics.Rendering.Chart.Easy as Ch
                                          hiding ( (^.) )
 
+import           Data.Time.Clock
+
+import           Data.Sequence                 as S
+
+import           Data.List                      ( cycle )
+
+
+
 
 data ChartWidget = ChartWidget
     { cwDrawingArea :: !DrawingArea
+    , cwValues      :: TVar ValueMap
     }
 
 initChartWidget :: (MonadIO m) => DrawingArea -> m ChartWidget
 initChartWidget da = do
-    let gui = ChartWidget { cwDrawingArea = da }
+    let values = M.fromList [("S2KTP501", S.empty), ("S2KTP502", S.empty)]
+
+    var <- newTVarIO values
+
+    let gui = ChartWidget { cwDrawingArea = da, cwValues = var }
 
     void $ Gtk.on da #draw (drawingFunction gui)
 
     pure gui
 
 
+type ValueMap = Map Text (Seq (UTCTime, Double))
 
-chartContent :: Renderable ()
-chartContent = toRenderable layout
+chartWidgetAddValues :: (MonadIO m) => ChartWidget -> [(Text, UTCTime, Double)] -> m () 
+chartWidgetAddValues chart values = do 
+    atomically $ do 
+        modifyTVar (cwValues chart) ins
+    redrawChart chart 
+    where 
+        ins :: ValueMap -> ValueMap
+        ins valMap = foldl' singleIns valMap values
+
+        singleIns valMap (name, t, pv) = M.adjust (S.|> (t, pv)) name valMap
+
+
+
+redrawChart :: (MonadIO m) => ChartWidget -> m ()
+redrawChart chart =
+    liftIO $ postGUIASync $ Gtk.widgetQueueDraw (cwDrawingArea chart)
+
+
+chartContent :: ValueMap -> Renderable ()
+chartContent valueMap =
+    let plots = RIO.zipWith plotVal (M.toList valueMap) chartColors
+    in  toRenderable (layout plots)
   where
-    am :: Double -> Double
-    am x = (sin (x * 3.14159 / 45) + 1) / 2 * (sin (x * 3.14159 / 5))
+    chartColors = cycle [opaque green, opaque orange, opaque darkblue]
 
-    sinusoid1 =
+    plotVal (name, vals) color =
         plot_lines_values
-            .~ [[ (x, (am x)) | x <- [0, (0.5) .. 400] ]]
+            .~ [toList vals]
             $  plot_lines_style
             .  line_color
-            .~ opaque blue
+            .~ color
+            $  plot_lines_style
+            .  line_width
+            .~ 2
             $  plot_lines_title
-            .~ "am"
+            .~ T.unpack name
             $  def
 
-    sinusoid2 =
-        plot_points_style
-            .~ filledCircles 2 (opaque red)
-            $  plot_points_values
-            .~ [ (x, (am x)) | x <- [0, 7 .. 400] ]
-            $  plot_points_title
-            .~ "am points"
-            $  def
-
-    layout =
+    layout ps =
         layout_title
-            .~ "Amplitude Modulation"
+            .~ "TM Parameter Values"
             $  layout_plots
-            .~ [toPlot sinusoid1, toPlot sinusoid2]
+            .~ map toPlot ps
             $  def
 
 
-drawingFunction :: ChartWidget -> Cairo.Context -> IO Bool 
-drawingFunction gui context = do 
-    let drawingArea = cwDrawingArea gui 
+drawingFunction :: ChartWidget -> Cairo.Context -> IO Bool
+drawingFunction gui context = do
+    let drawingArea = cwDrawingArea gui
 
-    width <- fromIntegral <$> #getAllocatedWidth drawingArea 
-    height <- fromIntegral <$> #getAllocatedHeight drawingArea 
+    width   <- fromIntegral <$> #getAllocatedWidth drawingArea
+    height  <- fromIntegral <$> #getAllocatedHeight drawingArea
 
-    let rndr = runBackend (defaultEnv bitmapAlignmentFns) (render chartContent (width, height))
+    content <- readTVarIO (cwValues gui)
+
+    let rndr = runBackend (defaultEnv bitmapAlignmentFns)
+                          (render (chartContent content) (width, height))
 
     void $ renderWithContext rndr context
-    pure True 
+    pure True

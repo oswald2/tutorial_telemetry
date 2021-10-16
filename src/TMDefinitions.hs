@@ -8,6 +8,7 @@ module TMDefinitions
     , defaultDefs
     , writeTMDefinitions
     , readTMDefinitions
+    , toDouble
     ) where
 
 import           Data.Aeson              hiding ( Value )
@@ -62,6 +63,14 @@ data Value =
     | ValDouble !Double
     | ValOctet !HexBytes
     deriving (Show, Generic, FromJSON, ToJSON)
+
+toDouble :: Value -> Double
+toDouble (ValUInt8 x) = fromIntegral x 
+toDouble (ValUInt16 x) = fromIntegral x 
+toDouble (ValUInt32 x) = fromIntegral x 
+toDouble (ValFloat x) =  realToFrac x 
+toDouble (ValDouble x) = x 
+toDouble (ValOctet _) = 0.0
 
 
 instance Display Value where

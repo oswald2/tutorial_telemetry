@@ -2,6 +2,7 @@ module TMPacket
     ( TMPacket(..)
     , Parameter(..)
     , Validity(..)
+    , isValid
     ) where
 
 import           Data.Time.Clock
@@ -32,6 +33,10 @@ data Validity =
   ValidityOK
   | ValidityOutOfBounds
   deriving (Eq, Ord, Enum, Show, Generic)
+
+isValid :: Validity -> Bool 
+isValid ValidityOK = True 
+isValid _ = False 
 
 
 data Parameter = Parameter
