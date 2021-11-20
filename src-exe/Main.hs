@@ -18,10 +18,11 @@ import           Options.Generic
 import           Chains
 import           Classes
 import           GHC.Conc                       ( getNumProcessors
-                                                , setNumCapabilities
+                                                , setNumCapabilities, labelThread
                                                 )
 import           Statistics
 import           TMDefinitions
+
 
 
 
@@ -80,6 +81,9 @@ main = do
     logOptions <- logOptionsHandle stderr True
     --let logOptions = setLogMinLevel LevelWarn logOptions'
 
+    tid <- myThreadId  
+    labelThread tid "main"
+
     withLogFunc logOptions $ \logF -> do
         frameVar <- newTVarIO initialStatistics
         pktVar   <- newTVarIO initialStatistics
@@ -101,6 +105,8 @@ main = do
 statThread
     :: (MonadIO m, MonadReader env m, HasStats env, HasLogFunc env) => m ()
 statThread = do
+    tid <- myThreadId  
+    liftIO $ labelThread tid "statistics"
     env <- ask
     go env Nothing Nothing 
   where

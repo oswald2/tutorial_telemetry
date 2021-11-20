@@ -175,6 +175,7 @@ executable tutorial-telemetry
         -optlo-O3
         -threaded
         -rtsopts
+        -eventlog
 
 test-suite tutorial-telemetry-test
     -- Base language which the package is written in.

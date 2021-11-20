@@ -29,6 +29,7 @@ import           TMFrame
 import           TMPacket
 import           Text.Show.Pretty        hiding ( Value )
 
+import           GHC.Conc                       ( labelThread )
 
 
 prettyShowC
@@ -46,7 +47,12 @@ prettyShowVcC vcid = awaitForever $ \x ->
 
 
 runNctrsChain
-    :: (MonadUnliftIO m, MonadReader env m, HasLogFunc env, HasConfig env, HasStats env)
+    :: ( MonadUnliftIO m
+       , MonadReader env m
+       , HasLogFunc env
+       , HasConfig env
+       , HasStats env
+       )
     => SwitcherMap
     -> m ()
 runNctrsChain switcherMap = do
@@ -56,6 +62,8 @@ runNctrsChain switcherMap = do
                                   (encodeUtf8 (cfgHostname cfg))
 
     res <- try $ runGeneralTCPClient settings $ \appData -> do
+        tid <- myThreadId  
+        liftIO $ labelThread tid "NCTRS"
         runConduitRes
             $  appSource appData
             .| ncduTmC
@@ -119,6 +127,8 @@ runVcChain
     -> ConduitT () Void m ()
     -> m ()
 runVcChain vcid chain = do
+    tid <- myThreadId
+    liftIO $ labelThread tid $ "VC" <> show vcid
     runConduit chain
     logWarn
         $  "Processing chain for VC"
@@ -128,7 +138,12 @@ runVcChain vcid chain = do
 
 
 runChains
-    :: (MonadUnliftIO m, MonadReader env m, HasConfig env, HasLogFunc env, HasStats env)
+    :: ( MonadUnliftIO m
+       , MonadReader env m
+       , HasConfig env
+       , HasLogFunc env
+       , HasStats env
+       )
     => PktIndex
     -> m ()
 runChains pktIdx = do
@@ -401,8 +416,8 @@ frameStatC = do
     env <- ask
     let frameSize = fromIntegral $ cfgTmFrameLen (getConfig env)
     awaitForever $ \meta -> do
-        let frameStatVar = getFrameStats env 
-        now <- liftIO $ getCurrentTime 
+        let frameStatVar = getFrameStats env
+        now <- liftIO $ getCurrentTime
         atomically $ modifyTVar' frameStatVar (statNewDU now frameSize)
         yield meta
 
@@ -413,7 +428,8 @@ packetStatC
 packetStatC = do
     awaitForever $ \meta -> do
         pktStatVar <- getPacketStats <$> ask
-        let pktSize = fromIntegral (pHdrLength . pusHdr . ppMetaPacket $ meta) + 1 + 6
-        now <- liftIO $ getCurrentTime 
+        let pktSize =
+                fromIntegral (pHdrLength . pusHdr . ppMetaPacket $ meta) + 1 + 6
+        now <- liftIO $ getCurrentTime
         atomically $ modifyTVar' pktStatVar (statNewDU now pktSize)
         yield meta
